@@ -125,7 +125,7 @@ def parse_input(input_str):
     return [make_tag(l) for l in vlst] + [make_vcard(l) for l in tlst]
 
 
-html_template = """<!DOCTYPE html>
+html_template = u"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <title>Wikivoyage Vcard-Tag Converter</title>
@@ -149,7 +149,7 @@ html_template = """<!DOCTYPE html>
 </html>
 """
 
-div_output = """<div id="output">
+div_output = u"""<div id="output">
     <h3>Parsed output</h3>
     <textarea rows="10" cols="150">{output}</textarea>
 </div>
@@ -158,8 +158,8 @@ div_output = """<div id="output">
 
 @route('/', method=['GET', 'POST'])
 def serve():
-    input = request.forms.get('convertinput', '')
-    output = '\n\n* '.join(parse_input(input)) if input else None
+    input = request.forms.get('convertinput', '').decode('utf8')
+    output = u'\n\n* '.join(parse_input(input)) if input else None
     output = div_output.format(output='* ' + output) if output else ''
     return string_formatter.format(html_template, output_template=output, default_input=input)
 
