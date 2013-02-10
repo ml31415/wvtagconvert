@@ -52,7 +52,6 @@ vcard_samples = [
 '{{VCard | type= restaurant | name= OHAYOU | comment= Sushi Restaurant, traditionelles japanisches Restaurant | url= http://www.ohayou.de/ | address= Belgradstr. 71, 80804 München | directions= "Ecke" Karl-Theodor-Str. | lat= 48.16726 | long= 11.57360 | phone= 089 / 32667604 | hours= Di. - Sa. 11.30 - 14.30, 17.30 - 23.00 Uhr; So. 17.00 - 22.00 Uhr}}. MVV: U3, Scheidplatz und Bonner Platz.',
 ]
 
-
 vcard_tag_type_translation = {
     'hostel': 'sleep',
     'hotel': 'sleep',
@@ -78,23 +77,46 @@ tag_template = '<{type} name="{name}" address="{address}" phone="{phone}" email=
 vcard_fields = ("type subtype name alt comment address directions intl-area-code phone mobile "
                "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
                "checkin checkout price credit-cards lat long description").split()
+number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
 
 def read_vcard(vcard_str):
     vcard_str, description = unicode(vcard_str).split('}}', 1)
     pts = [pt.split('=') for pt in vcard_str.strip('{},. ').split('|')[1:]]
     d = dict((p[0].strip().lower(), p[1].strip()) for p in pts)
-    description = description.lstrip('., ').strip()
-    if description:
-        d['description'] = description[0].capitalize() + description[1:]
-    return d
+    if 'description' not in d and description:
+        d['description'] = description
+    return sanitize(d)
 
 def read_tag(tag_str):
     t = html.fromstring(unicode(tag_str), parser=html_parser)
     d = dict(t.items())
     d['type'] = t.tag
-    d['description'] = t.text.lstrip('., ').strip() if t.text else ''
-    return d
+    if t.text:
+        d['description'] = t.text
+    return sanitize(d)
     
+def sanitize(d):
+    description = d.get('description', '').lstrip(';., ')
+    if description:
+        d['description'] = description[0].upper() + description[1:]
+    else:
+        d.pop('description', None)
+    for number_item in number_fields:
+        number = d.get(number_item, '').lstrip(';., ').strip()
+        if number:
+            if not number.startswith('('):
+                # Remove (0) things including the 0 inside strings
+                number = re.sub(r'\(\s*0\s*\)', ' ', number)
+            number = re.sub(r'[()/.,\\-]', ' ', number)
+            number = re.sub(r'\s+', ' ', number).strip()
+            # Avoid single leading zeros
+            if number[0] == '0' and number[1] == ' ':
+                number = '0' + number[2:]
+            d[number_item] = number
+        else:
+            d.pop(number_item, None)
+    return dict((key.strip(), val.strip()) for key, val in d.items())
+
 def make_vcard(d):
     d = d.copy()
     d['type'] = tag_vcard_type_translation.get(d['type'].lower(), d['type'])
@@ -111,8 +133,9 @@ def make_tag(d):
         d['type'] = vcard_tag_type_translation.get(type_lower, 'listing')
     phone_prefix = d.get('intl-area-code')
     if phone_prefix:
-        for item in ('phone', 'mobile', 'fax', 'fax-mobile'):
-            if item in d:
+        phone_prefix += ' '
+        for item in number_fields:
+            if item in d and not d[item].startswith(('+', '00')):
                 d[item] = phone_prefix + d[item].lstrip('0')
     return string_formatter.format(tag_template, **d)
 
