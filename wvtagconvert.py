@@ -34,6 +34,7 @@ tag_samples = ['<eat name="Al Forno Ristorante" address="Nördliche Ringstraße 
 '<eat name="Mai Thai" address="Bismarckanlage 16" phone="+49 9141 995759" email="" fax="" url=""></eat>',
 '<eat name="Steakhaus El Toro" address="Obertorstr. 5" phone="+49 9141 922730"></eat>',
 '<eat name="Silbermühle - vino y tapa Restaurant" address="Silbermühle 4" phone="+49 9141 9744001" email="silbermuehle@web.de" fax="" url="http://www.die-silbermuehle.de" hours="" price="" lat="" long=""></eat>',
+"""<sleep name="Jugendgästehaus Haus International München" address="Elisabethstr. 87, 80797 München" phone="+49 89 12 00 6 0" email="" fax="+49 89 12 00 6 630" url="www.haus-international.de/" hours="" price="EZ 49,00 €; DZ D/WC 39,00 €" lat="" long="">',</sleep>""",
 ]
 
 vcard_samples = [
@@ -70,7 +71,7 @@ vcard_tag_type_translation = {
     'festival': 'do',
 }
 
-tag_vcard_type_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight')
+tag_vcard_type_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 tag_search = r'(<(%s).+>.*</\2>)' % '|'.join(sorted(tag_vcard_type_translation.keys()))
 
 tag_template = '<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" fax="{fax}" url="{url}" hours="{hours}" price="{price}" lat="{lat}" long="{long}">{description}</{type}>'
@@ -78,6 +79,9 @@ vcard_fields = ("type subtype name alt comment address directions intl-area-code
                "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
                "checkin checkout price credit-cards lat long description").split()
 number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
+
+def squeeze(s):
+    return re.sub(r'\s+', ' ', s.strip())
 
 def read_vcard(vcard_str):
     vcard_str, description = unicode(vcard_str).split('}}', 1)
@@ -96,7 +100,9 @@ def read_tag(tag_str):
     return sanitize(d)
     
 def sanitize(d):
-    description = d.get('description', '').lstrip(';., ')
+    """ Fix usual listing errors """
+    d = dict((squeeze(key), squeeze(val)) for key, val in d.iteritems())
+    description = d.get('description', '').lstrip(""";., """)
     if description:
         d['description'] = description[0].upper() + description[1:]
     else:
@@ -108,14 +114,18 @@ def sanitize(d):
                 # Remove (0) things including the 0 inside strings
                 number = re.sub(r'\(\s*0\s*\)', ' ', number)
             number = re.sub(r'[()/.,\\-]', ' ', number)
-            number = re.sub(r'\s+', ' ', number).strip()
+            number = squeeze(number)
             # Avoid single leading zeros
             if number[0] == '0' and number[1] == ' ':
                 number = '0' + number[2:]
             d[number_item] = number
         else:
             d.pop(number_item, None)
-    return dict((key.strip(), val.strip()) for key, val in d.items())
+    url = d.get('url', '')
+    if url and not url.startswith('http://') and not '//' in url:
+        url = 'http://' + url
+        d['url'] = url
+    return d
 
 def make_vcard(d):
     d = d.copy()
@@ -139,14 +149,20 @@ def make_tag(d):
                 d[item] = phone_prefix + d[item].lstrip('0')
     return string_formatter.format(tag_template, **d)
 
-def parse_input(input_str):
-    vlst = re.findall(r'{{vcard\s*\|.+}}.*$', input_str, flags=re.MULTILINE|re.IGNORECASE)
-    vlst = [read_vcard(l) for l in vlst]
+def parse_input(input_str, format):
+    found = []
+    for line in input_str.split('\n'):
+        lst = re.findall(r'{{vcard\s*\|.+}}.*$', line, flags=re.MULTILINE|re.IGNORECASE)
+        found += [read_vcard(l) for l in lst]
+        lst = re.findall(tag_search, line, flags=re.MULTILINE|re.IGNORECASE)
+        found += [read_tag(l[0]) for l in lst]
     
-    tlst = re.findall(tag_search, input_str, flags=re.MULTILINE|re.IGNORECASE)
-    tlst = [read_tag(l[0]) for l in tlst]
-    return [make_tag(l) for l in vlst] + [make_vcard(l) for l in tlst]
-
+    if format == 'tag':
+        return [make_tag(l) for l in found]
+    elif format == 'vcard':
+        return [make_vcard(l) for l in found]
+    else:
+        raise ValueError('Invalid output format: %s' % format)
 
 html_template = u"""<!DOCTYPE html>
 <html lang="en">
@@ -161,8 +177,13 @@ html_template = u"""<!DOCTYPE html>
              to <a href="https://en.wikivoyage.org/wiki/Wikivoyage:Listings">listing tag</a> or vice versa</p>
         <form action="/" id="converter" method="post">
             <textarea name="convertinput" rows="10" cols="150">{default_input}</textarea>
-            <br />
-            <button type="submit" name="button" title="Submit">Submit</button>
+            <p>Output type:
+                <select name="outputformat">
+                    <option name="vcard"{vcard_selected}>vCard</option>
+                    <option name="tag"{tag_selected}>Tag</option>
+                </select>
+                <button type="submit" name="button" title="Submit">Submit</button>
+            </p>
         </form>
     </div>
     
@@ -182,13 +203,17 @@ div_output = u"""<div id="output">
 @route('/', method=['GET', 'POST'])
 def serve():
     input = request.forms.get('convertinput', '').decode('utf8')
-    output = u'\n\n* '.join(parse_input(input)) if input else None
+    outputformat = request.forms.get('outputformat', 'vcard').lower()
+    output = u'\n\n* '.join(parse_input(input, outputformat)) if input else None
     output = div_output.format(output='* ' + output) if output else ''
-    return string_formatter.format(html_template, output_template=output, default_input=input)
+    params = dict(output_template=output, default_input=input)
+    params[outputformat + '_selected'] = 'selected="selcted"'
+    return string_formatter.format(html_template, **params)
 
 def debug_main():
-    teststr = '\n* '.join(tag_samples) + '\n' + '\n* '.join(vcard_samples)
-    res = parse_input(teststr)
+    #teststr = '\n* '.join(tag_samples) + '\n' + '\n* '.join(vcard_samples)
+    teststr = tag_samples[-1]
+    res = parse_input(teststr, 'vcard')
     for l in res:
         print l
 
