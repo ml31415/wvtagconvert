@@ -9,7 +9,7 @@ import urllib2
 from wvtagconvert import parse_input, string_formatter
 from tests.samples import vcards, tags
 
-defaultinput = '* ' + tags[0] + '\n\n* ' + vcards[0]
+defaultinput = u'* ' + tags[0] + '\n\n* ' + vcards[0]
 
 html_template = u"""<!DOCTYPE html>
 <html lang="en">
@@ -54,7 +54,7 @@ def serve():
     output = u'\n\n* '.join(parse_input(input, outputformat)) if input else None
     output = div_output.format(output='* ' + output) if output else ''
     params = dict(output_template=output, default_input=input or defaultinput)
-    params[outputformat + '_selected'] = 'selected="selcted"'
+    params[outputformat + '_selected'] = u'selected="selcted"'
     return string_formatter.format(html_template, **params)
 
 
