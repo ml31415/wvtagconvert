@@ -65,3 +65,7 @@ untaggeds = [
     """* '''Aninuan Beach Resort''' [http://www.aninuanbeach.com/] Price: USD $50. Phone Number: +63920 931 8946 or +63920 931 8924. """,
 ]
 
+for lst in (tags, vcards, untaggeds):
+    for cnt, val in enumerate(lst):
+        lst[cnt] = val.decode('utf8')
+        
