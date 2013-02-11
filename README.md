@@ -4,6 +4,9 @@ wvtagconvert
 Wikivoyage formatting converter. Converts list entries from tag listing 
 format used in English wikivoyage to vcard format used in German version.
 
+* [Vcard specification](http://de.wikivoyage.org/wiki/Vorlage:VCard)
+* [Listing tag specification](https://en.wikivoyage.org/wiki/Wikivoyage:Listings)
+
 Description text following a vcard without a description field is treated
 as description for that tag, delimited by a newline.
 
@@ -18,8 +21,27 @@ to create a vcard type, though this leads to quite poor generic
 results. This could need some more effort for auto detection of common 
 cases.
 
-* Vcard specification: http://de.wikivoyage.org/wiki/Vorlage:VCard
-* Listing tag specification: https://en.wikivoyage.org/wiki/Wikivoyage:Listings
+
+Run
+===
+For local testing: 
+
+    python -m bottle webdisplay
+   
+Somewhere remote:
+
+    python -m bottle --server gevent -b <external_ipaddress> webdisplay
+
+And then direct your browser to localhost:8080 or <external_ipaddress>:8080
+
+
+Requirements
+============
+* Python 2.6+
+* lxml package
+* bottle package
+* gevent (optional)
+
 
 Todo
 ====
