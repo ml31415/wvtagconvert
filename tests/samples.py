@@ -6,7 +6,7 @@ Created on 11.02.2013
 '''
 
 tags = [
-    '<eat name="Al Forno Ristorante" address="Nördliche Ringstraße 37" phone="+49 9141 920420" email="" fax="" url="2" hours="" price="" lat="" long=""></eat>',
+    '<eat name="Al Forno Ristorante" address="Nördliche Ringstraße 37" phone="+49 9141 920420" email="" fax="" url="www.blafasel.com" hours="" price="" lat="" long=""></eat>',
     '<eat name="Andreas Stuben" address="Rosenstraße 18" phone="+49 9141 8737919" email="" fax="+49 9141 8737920" url="http://www.andreas-stuben.de" hours="" price="" lat="" long=""></eat>',
     '<eat name="Antichi Sapori Romani" address="Judengasse 25" phone="+49 9141 9239172" url="http://www.facebook.com/pages/Antichi-Sapori-Romani/417927868249147" hours="" price="" lat="" long=""></eat>',
     '<eat name="Bräustüberl Zur Kanne" address="Bachgasse 15" phone="+49 9141 3844" email="" url="http://schneider-bier.de/gaststaetten_02_kanne.php" hours="Tu-So 10.30–14.00 and 17.30–24.00" price="">Original interior nearly untouched since 1890.</eat>',

@@ -58,7 +58,7 @@ vcard_number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
 
 
 # Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
-untagged_search = r"""^\*?\s{0,3}'''.{3,40}'''[,.] .{20,2000}\."""
+untagged_search = r"""^\*:*?\s{0,3}'''.{3,40}'''[,. ].{20,2000}\."""
 untagged_buzzwords = dict(
     sleep = ['room', 'lodge', 'lodging', 'aircon', 'a/c',
              'tv', 'wifi', 'shower', 'breakfast', 'clean',

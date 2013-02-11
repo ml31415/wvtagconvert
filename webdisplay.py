@@ -4,8 +4,12 @@ Created on 11.02.2013
 @author: nimrod
 '''
 from bottle import route, run, request, template
+import urllib2
 
 from wvtagconvert import parse_input, string_formatter
+from samples import vcards, tags
+
+defaultinput = '* ' + tags[0] + '\n\n* ' + vcards[0]
 
 html_template = u"""<!DOCTYPE html>
 <html lang="en">
@@ -49,10 +53,24 @@ def serve():
     outputformat = request.forms.get('outputformat', 'vcard').lower()
     output = u'\n\n* '.join(parse_input(input, outputformat)) if input else None
     output = div_output.format(output='* ' + output) if output else ''
-    params = dict(output_template=output, default_input=input)
+    params = dict(output_template=output, default_input=input or defaultinput)
     params[outputformat + '_selected'] = 'selected="selcted"'
     return string_formatter.format(html_template, **params)
 
+
+icon = None
+@route('/favicon.ico')
+def serve_icon():
+    global icon
+    if not icon:
+        req = urllib2.Request('http://en.wikivoyage.org/favicon.ico', 
+            headers={'User-Agent': 'Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) '
+                                    'Gecko/20110422 Ubuntu/10.04 (lucid) Firefox/3.6.17'})
+        try:
+            icon = urllib2.urlopen(req).read()
+        except Exception:
+            pass
+    return icon
 
 if __name__ == '__main__':
     run(reloader=True, host='localhost', port=8080)
