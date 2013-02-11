@@ -7,7 +7,7 @@ from bottle import route, run, request, template
 import urllib2
 
 from wvtagconvert import parse_input, string_formatter
-from samples import vcards, tags
+from tests.samples import vcards, tags
 
 defaultinput = '* ' + tags[0] + '\n\n* ' + vcards[0]
 
