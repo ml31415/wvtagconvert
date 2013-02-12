@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Wikivoyage format converter
 
@@ -48,7 +49,7 @@ def singular(w):
 
 tag_vcard_type_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 tag_template = '<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" fax="{fax}" url="{url}" hours="{hours}" price="{price}" lat="{lat}" long="{long}">{description}</{type}>'
-tag_search = r'(<(%s).+>.*</\2>)' % '|'.join(sorted(tag_vcard_type_translation.keys()))
+tag_search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(tag_vcard_type_translation.keys()))
 
 vcard_search = r'{{vcard\s*\|.+}}.*$'
 vcard_fields = ("type subtype name alt comment address directions intl-area-code phone mobile "
@@ -74,17 +75,24 @@ untagged_buzzwords = dict(
     hostel = ['hostel', 'dorm', 'dormitory', 'backpacker', 'shared'],
     guesthouse = ['guesthouse', 'guest house', 'house', 'homely'],
     
-    restaurant = ['restaurant', 'eat', 'food', 'kitchen', 'cuisine', 'seafood', 
-            'breakfast', 'wine', 'culinary', 'rice', 
-            'noodle', 'fries', 'burger', 'meal', 'crab',
-            'spring roll', 'kebab', 'soup', 'spicy', 'curry',
+    restaurant = ['restaurant', 'eat', 'food', 'kitchen', 'cuisine',  
+            'breakfast', 'wine', 'culinary', 'noodle', 'meal', 
+            'kebab', 'soup', 'egg', 'buffet',
             'vegetarian', 'beef', 'chicken', 'pork', 'portion',
-            'salad', 'fruit', 'bistro', 'pasta', 'sandwich',
-            'lunch', 'dinner', 'dish', 'fish', 'chef',
-            'tapas', 'dining', 'halal', 'buffet', 'baguette',
-            'dumpling', 'duck', 'specialities', 'suckling pig',
-            'egg', 'hot dog', 'wifi'],
-    cafe = ['cafe', 'coffee', 'drink', 'drinks', 'latte', 'tea', 'ice cream', 
+            'salad', 'fruit', 'lunch', 'dinner', 'dish', 'chef',
+            'tapas', 'dining', 'halal',
+            'dumpling', 'duck', 'specialities', 'wifi'],
+    fastfood = ['fastfood', 'burger', 'hot dog', 'french fries',
+                'chicken wings', 'kfc', 'mcdonalds', 'sandwich',
+                'baguette', 'bistro'],
+    seafood = ['seafood', 'fish', 'crab', 'oyster'],
+    asian = ['asian', 'curry', 'suckling pig', 'vietnamese', 
+             'chinese', 'spring roll', 'rice', 'spicy',
+             'thai', 'pho', 'filipino'],
+    italian = ['italian', 'pizza', 'pasta', 'spaghetti',
+               'bolognese', 'fettuccine', 'risotto'],
+    
+    cafe = ['cafe', u'café', 'coffee', 'drink', 'latte', 'tea', 'ice cream', 
             'juice', 'bistro', 'smoothies', 'yoghurt', 'ca phe', 'waffle', 
             'egg', 'pancake', 'cappuccino', 'donut'],
     bar = ['bar', 'drink', 'beer', 'draft', 'music', 'live', 
@@ -105,8 +113,9 @@ untagged_buzzwords = dict(
                  'shrine'],
     art = ['art', 'gallery', 'paint', 'oil', 'statue', 'wood',
            'decor', 'contemporary'],
-    recreation = ['park', 'garden', 'green', 'walk', 'forrest', 'tree',
-                  'lake', 'beach', 'nature', 'untouched', 'view'],
+    nature = ['park', 'garden', 'green', 'walk', 'forrest', 'tree',
+              'lake', 'beach', 'nature', 'untouched', 'view',
+              'national park', 'fountain', 'waterfall'],
     historical = ['historical', 'history',
            'palace', 'war', 'tour', 'hall', 'monument', 'tower',
            'emperor', 'king', 'queen', 'prince', 'castle', 'fortress',
@@ -117,11 +126,11 @@ untagged_buzzwords = dict(
            'freedom', 'forces', 'honour', 'struggled',
            'fought', 'country', 'official', 'republic',
            'independence', 'occupation', 'occupied',
-           'headquarter'],
+           'headquarter', 'first lady'],
                           
-    buy = ['buy', 'cheap', 'shop', 'market', 'goods', 
-           'item', 'money', 'price', 'save', 'bargain',
-           'cash', 'haggling', 'haggle', 'sell', 'store',
+    buy = ['buy', 'cheap', 'shop', 'market', 'goods', 'item', 
+           'money', 'price', 'save', 'bargain', 'bargaining'
+           'cash', 'haggle', 'haggling', 'sell', 'store',
            'shopping', 'expensive', 'overpriced'],
     cloth = ['cloth', 'jeans', 'shirt', 'wear', 'accessory',
              'dress', 'hats', 'leather', 'suit', 'coat', 'tailor',
@@ -140,17 +149,18 @@ untagged_buzzwords = dict(
           'cooking', 'concert', 'theater', 'dolphinarium', 
           'festival', 'opera', 'zoo'],
     learn = ['learn', 'university', 'teach', 'student', 'language', 
-             'cooking']
+             'cooking'],
+                          
 )
 untagged_buzzwords = dict((key, set(val)) for key, val in untagged_buzzwords.iteritems())
-untagged_buzzword_filter = set(string.ascii_letters + string.digits + " /")
+untagged_buzzword_filter = set(string.ascii_letters + u" /éäöüß")
 
 # First: common items, second: Items in subclasses
 untagged_categories = dict(
     sleep = ['sleep', ['hotel', 'guesthouse', 'hostel']],
-    eat = ['restaurant', []],
+    eat = ['restaurant', ['seafood', 'asian', 'fastfood', 'italian']],
     drink = [None, ['cafe', 'bar', 'nightclub']],
-    see = ['see', ['religious', 'historical', 'recreation', 'art']],
+    see = ['see', ['religious', 'historical', 'nature', 'art']],
     buy = ['buy', ['cloth', 'books', 'touristy', 'art']],
     do = ['do', ['outdoor', 'indoor', 'learn']],
 )
@@ -160,26 +170,42 @@ for key, val in untagged_categories.items():
     untagged_subcategories[key] = dict((k, untagged_buzzwords[k]) for k in val[1])
     untagged_category_sets[key] = set.union(untagged_buzzwords[val[0]] if val[0] else set(), 
                                    *untagged_subcategories[key].values())
+
+untagged_split_categories = dict(
+    address = set(['avenue', 'ave', 'building', 'bldg', 'boulevar', 'blvd',
+                   'drive', 'dr', 'expressway', 'expy', 'freeway', 'fwy',
+                   'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
+                   'place', 'pl', 'road', 'rd', 'street', 'st',
+                   'jalan', 'jl', 'soi', 'thanon', 'th', # Indonesia, Thailand
+                   ]),
+    directions = set(['intersection', 'corner', 'opposite', 'nearby',
+                  'near', 'inside', 'behind', 'left', 'right', 'bus',
+                  'train', 'station', 'taxi', 'stop', 'next', 'at']),
+    alt = set(['a.k.a', 'aka', 'also known']),
+    phone = set(['tel', 'nr', 'phone', 'number', u'☎'])
+)
 #for key, val in untagged_sets.items():
 #    print key, val
 
-def determine_category(word_list, category_dict):
-    wc = len(word_list)
+def determine_category(word_list, category_dict, wc_offset=10, full_list=False):
+    # Give it an offset, so that words in the end are
+    # not totally meaningless, maybe needs some more
+    # calibration
+    wc = len(word_list) + wc_offset
     scores = defaultdict(float)
     for category in category_dict.keys():
         for cnt, word in enumerate(word_list):
             if word in category_dict[category]:
                 # Rate words by their position in the
                 # string, the later, the less important
-                # Give it an offset, so that words in the end are
-                # not totally meaningless, maybe needs some more
-                # calibration
-                scores[category] += (wc - cnt + 10) / wc
+                scores[category] += (wc - cnt) / wc
+    # Sort by score, highest first
+    results = sorted(scores.iteritems(), key=lambda x: x[1], reverse=True)
+    if full_list:
+        return results
     try:
-        # Get the category with the highest score
-        return sorted(scores.iteritems(), key=lambda x: x[1], reverse=True)[0][0]
+        return results[0][0]
     except IndexError:
-        # Not one single matching item was found
         return
 
 def determine_tagtype(untagged_str):
@@ -197,18 +223,85 @@ def determine_tagtype(untagged_str):
         subcategory = None
     return category, subcategory
 
-def chunkify(untagged_str):
+
+abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
+phone_splitter = set(['tel', 'nr', 'no', 'phone', 'number', 'fax', 'e-mail', 'email', u'☎'])
+def parse_phonefax(s, verbose=False):
+    """ Split something like 'phone 2343434 Fax +343434 tel 3000777' """
+    pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
+    parsed_pts = []
+    for pt in pts:
+        pt = pt.strip()
+        if not pt:
+            continue
+        elif parsed_pts and parsed_pts[-1].lower() in phone_splitter:
+            if pt.lower() not in phone_splitter:
+                parsed_pts[-1] += ' ' + pt
+        else:
+            parsed_pts.append(pt)
+    if len(parsed_pts) == 1 and not find_any(parsed_pts[0].lower(), *phone_splitter):
+        return [pt.strip() for pt in parsed_pts[0].rsplit(',', 1)]
+    return parsed_pts
+    
+abbreviations_filter = r'\s(\w|%s)\.' % '|'.join(abbreviations)
+closing_delimiter = {'(': ')', '[': ']'}
+def chunkify(s, verbose=False):
     """ Split the string into meaningful chunks determined by
         syntactical parts found inside the string.
     """
-    chunks = []
-    untagged_str = untagged_str.lstrip(',. ')
-    while untagged_str:
-        pass
+    s = s.lstrip('* ')
+    # Remove irrelevant dots, which disturb parsing
+    s = re.sub(r'\.\s*,', ',', s)
+    s = re.sub(r'\.\s*:', '', s)
+    s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
+    if s.startswith("'''"):
+        # We know, that fat is only a relevant block if it is
+        # used right in the beginning, so exclude this from
+        # the loop
+        val = re.findall(r"""'''(.*?)'''""", s, flags=re.IGNORECASE)[0]
+        s = s[len(val) + 6:].lstrip(',. ')
+        chunks = [val]
+    else:
+        chunks = []
+
+    while s:
+        s = s.lstrip(',. -')
+        # Dot and bracket only if not followed by digit or not part of
+        # an email ending
+        m = re.search(r'(\.[\sA-Z]|\.[a-z]{5,10}|\(\s{0,2}\D|\[)', s)
+        split_pos = m.start() if m else None
+        if split_pos is None:
+            s = s.strip()
+            subchunks = [s] if s else []
+            s = '' # We're done, so end the loop afterwards
+        else:
+            delimiter = s[split_pos]
+            if delimiter == '.':
+                subchunk1 = s[:split_pos].rstrip(', -')
+                subchunks = [subchunk1] if subchunk1 else []
+                s = s[split_pos+1:]
+            else:
+                subchunk1 = s[:split_pos].rstrip(', -')
+                subchunk2, s = s[split_pos+1:].split(closing_delimiter[delimiter], 1)
+                subchunk2 = subchunk2
+                if subchunk1:
+                    subchunks = [subchunk1, subchunk2]
+                else:
+                    subchunks = [subchunk2]
+
+        # Do we need to break down it further?
+        if subchunks and len(subchunks[0]) > 25:
+            if subchunks[0].count(',') > 1:
+                subchunks = subchunks[0].rsplit(',', 1) + subchunks[1:]
+            elif sum(1 for c in subchunks[0] if c in '123456789') > 6:
+                # No zeros, to avoid mistakes with money statements
+                subchunks = parse_phonefax(subchunks[0]) + subchunks[1:]
+                        
+        chunks += subchunks
+    return chunks
+        
     
-def classify_chunk(chunk):
-#        name = re.findall(r"""'''(.*)'''""", untagged_str, flags=re.IGNORECASE)[0]
-#        untagged_str = untagged_str[len(name) + 6:].lstrip(',. ')
+def classify_chunk(chunk, position=None):
 #        if '.' in untagged_str:
 #            data, description = untagged_str.split('.', 1)
 #        else:
@@ -238,7 +331,10 @@ def read_untagged(untagged_str):
     """
     tag_type = determine_tagtype(untagged_str)
     chunks = chunkify(untagged_str)
-    chunk_types = map(classify_chunk, chunks)
+    cl = len(chunks) + 3 # Offset
+    positions = [(cl - i)  /  cl for i in xrange(len(chunks))]
+    chunk_types = map(classify_chunk, chunks, positions)
+    # TODO: Merge all identified parts grouped by their chunk_type in order
     d = dict()
     d['type'] = tag_type
     return d
