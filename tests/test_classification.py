@@ -56,7 +56,7 @@ class TestParsePhonefax(unittest.TestCase):
 
 
 class TestSplitInput(unittest.TestCase):
-    test_arr = [
+    test_splits = [
         """B4 Bar-Café || 75 D Ben Nghe || A charming Belgian-Vietnamese owned bar, with a welcoming interior and free pool""",
         """Café on Thu Wheels || 1/2 D Nguyen Tri Phuong || It's a little bar owned by the charming lady Thu.""",
         """Birmingham Buddhist Centre || 11 Park Rd, Moseley || ''#1, #35 or #50 bus'' || ''+44 121'' 449 5279 || ''[mailto:info@birminghambuddhistcentre.org.uk info@birminghambuddhistcentre.org.uk]'' || http://www.birminghambuddhistcentre.org.uk/ || A centre run by the Friends of the Western Buddhist Order'' .""",
@@ -80,13 +80,60 @@ class TestSplitInput(unittest.TestCase):
         """Aninuan Beach Resort || http://www.aninuanbeach.com/ || Price: USD $50 || Phone : +63920 931 8946 or +63920 931 8924""",
     ]
     
+    test_classification = [
+        "name || address || description",
+        "name || address || description",
+        "name || address || directions || phone || email || url || description",
+        "name || alt || address || phone || email || url || hours || hours || hours || description || description || description || description",
+        "name || address || phone || url || description",
+        "name || address || phone",        
+        "name || address || phone || description || url || description || description || description || description || description",
+        "name || address || phone || description || description || description || description || description || description || description || description || description",
+        "name || description || hours || description || description || description",
+        "name || address || phone || url || price || description || description || description",
+        "name || description || description",
+        "name || description",
+        "name || description",
+        "name || description || description || description || description || description",
+        "name || description || description || description || description",
+        "name || alt || description || description",
+        "name || description || description || description",
+        "name || description",
+        "name || url || description || description || description || description || description || description || description || description",
+        "name || url || directions || phone || email || description || description",
+        "name || url || price || phone",        
+    ]
+    
     def runTest(self):
-        for item, check in izip_longest(untaggeds, self.test_arr):
-            chunks = ' || '.join(chunkify(item, verbose=not check))
+        for cnt, (item, check, check_classify) in enumerate(izip_longest(untaggeds, self.test_splits, 
+                                                        self.test_classification)):
+            chunks = chunkify(item, verbose=not check)
+            chunk_str = ' || '.join(chunks)
             if check:
-                self.assertEqual(chunks, check, "\nItem: %s\nRelt: %s\nChck: %s" % (item, chunks, check))
+                self.assertEqual(chunk_str, check, 
+                        "Test %s\nItem: %s\nRslt: %s\nChck: %s" % (cnt, item, chunk_str, check))
             else:
                 print item, '\n', chunks, '\n'
+            chunk_types = map(classify_chunk, chunks, range(len(chunks)))
+            chunk_type_str = ' || '.join(chunk_types)
+            if check_classify:
+                self.assertEqual(chunk_type_str, check_classify, 
+                        "Test %s\nRslt: %s\nClss: %s\nChck: %s\n%s" % (
+                            cnt, chunk_str, chunk_type_str, check_classify, 
+                            '\n'.join(str(classify_chunk(x, pos, full_list=True)) for pos, x in enumerate(chunks))))
+            else:
+                print chunk_str
+                print chunk_type_str
+            
+
+class TestChunkClassification(unittest.TestCase):
+    test_arr = [
+    
+    
+    
+    
+    
+    ]
             
 
 if __name__ == "__main__":

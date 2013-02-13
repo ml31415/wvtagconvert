@@ -10,6 +10,7 @@ from __future__ import division
 
 import re
 import string
+from datetime import datetime
 from collections import defaultdict
 from lxml import etree, html
 
@@ -171,22 +172,6 @@ for key, val in untagged_categories.items():
     untagged_category_sets[key] = set.union(untagged_buzzwords[val[0]] if val[0] else set(), 
                                    *untagged_subcategories[key].values())
 
-untagged_split_categories = dict(
-    address = set(['avenue', 'ave', 'building', 'bldg', 'boulevar', 'blvd',
-                   'drive', 'dr', 'expressway', 'expy', 'freeway', 'fwy',
-                   'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
-                   'place', 'pl', 'road', 'rd', 'street', 'st',
-                   'jalan', 'jl', 'soi', 'thanon', 'th', # Indonesia, Thailand
-                   ]),
-    directions = set(['intersection', 'corner', 'opposite', 'nearby',
-                  'near', 'inside', 'behind', 'left', 'right', 'bus',
-                  'train', 'station', 'taxi', 'stop', 'next', 'at']),
-    alt = set(['a.k.a', 'aka', 'also known']),
-    phone = set(['tel', 'nr', 'phone', 'number', u'☎'])
-)
-#for key, val in untagged_sets.items():
-#    print key, val
-
 def determine_category(word_list, category_dict, wc_offset=10, full_list=False):
     # Give it an offset, so that words in the end are
     # not totally meaningless, maybe needs some more
@@ -224,10 +209,11 @@ def determine_tagtype(untagged_str):
     return category, subcategory
 
 
-abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
 phone_splitter = set(['tel', 'nr', 'no', 'phone', 'number', 'fax', 'e-mail', 'email', u'☎'])
 def parse_phonefax(s, verbose=False):
-    """ Split something like 'phone 2343434 Fax +343434 tel 3000777' """
+    """ Split strings like 'phone 2343434 Fax +343434 tel 3000777', 
+        which don't have any helping punctuation.
+    """
     pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
     parsed_pts = []
     for pt in pts:
@@ -243,6 +229,7 @@ def parse_phonefax(s, verbose=False):
         return [pt.strip() for pt in parsed_pts[0].rsplit(',', 1)]
     return parsed_pts
     
+abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
 abbreviations_filter = r'\s(\w|%s)\.' % '|'.join(abbreviations)
 closing_delimiter = {'(': ')', '[': ']'}
 def chunkify(s, verbose=False):
@@ -300,28 +287,142 @@ def chunkify(s, verbose=False):
         chunks += subchunks
     return chunks
         
-    
-def classify_chunk(chunk, position=None):
-#        if '.' in untagged_str:
-#            data, description = untagged_str.split('.', 1)
-#        else:
-#            data, description = untagged_str, ''
-#        if not '.' in data and not ',' in data and not '(' in data and len(data) < 50:
-#            address = data
-#            direction = ''
-#            data = ''
-#        else:
-#            if '(' in data and ')' in data:
-#                add_dir, data = data.split(')', 1)
-#                address, direction = add_dir.split('(', 1)
-#                diretion = direction.strip("',. ")
-#                address = address.strip("',. ")
-#            else:
-#                pass
-#        print ';'.join((name, address, direction, data, description))
+chunk_type_categories = dict(
+    address = set(['avenue', 'ave', 'building', 'bldg', 'boulevard', 'blvd',
+                   'drive', 'dr', 'expressway', 'expy', 'freeway', 'fwy',
+                   'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
+                   'place', 'pl', 'road', 'rd', 'street', 'st',
+                   'jalan', 'jl', 'soi', 'thanon', 'th', # Indonesia, Thailand
+                   ]),
+    directions = set(['intersection', 'corner', 'opposite', 'nearby',
+                  'near', 'inside', 'behind', 'left', 'right', 'bus',
+                  'train', 'station', 'taxi', 'stop', 'next', 'at',
+                  'between']),
+    alt = set(['aka', 'also', 'known', 'former']),
+    phone = set(['tel', 'nr', 'phone', 'number', u'☎']),
+    email = set(['email', 'e-mail', 'mail', 'mailto']),
+    hours = set(['hours', 'day', 'from', 'to', 'open', 'until', 'daily', 'm', 'tu', 'w', 'th', 'f', 'sa', 'su',
+                 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+                 '24', 'late', 'noon', 'midnight']),
+    fax = set(['fax', 'number']),
+    price = set(['rates', 'start', 'only', 'cheap'])
+)
 
-    d = dict()
-    return d
+chunk_type_categories_partly = dict(
+    url = set(['http://', 'www.', '.com', '.org', '.net', '.htm', '.php']),
+    alt = set(["'''"]),
+    phone = set(['+']),
+    fax = set(['+']),
+    email = set(['@', '.com', '.org', '.net']),
+    hours = set(['AM', 'PM']),
+    price = set(['$', 'USD', u'€', 'EUR', u'¥', 'JPY', u'£', 'GBP', 
+                 u'¥', 'RMB', 'yuan', u'₹', 'INR', 'rupees'
+                 u'₱', 'PHP', 'pesos', u'₪', 'NIS', 'shekels',
+                 u'₩', 'KRW', u'฿', 'baht',
+                 'RM',' MYR', 'ringgit', 'Rp', 'IDR', 'rupiah',
+                 'rubles', 'dong', 'DKK', 'NOK', 'SEK'])
+)
+
+chunk_combined_set = set.intersection(*chunk_type_categories.values())
+chunk_type_filter = set(string.ascii_letters + u""" +☎-@€¥£₹₱₪₩฿""")
+chunk_word_filter = set(string.digits + string.ascii_letters)
+chunk_description_fuzz = set(['location', 'prime', 'beach'])
+def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
+    """ Name, address, directions, url, email, price, hours or description """
+    scores = defaultdict(float)
+    # If it doesn't triger anything else, it's description
+    scores['description'] += 0.1
+    if len(chunk) > 140:
+        scores['address'] -= 1.5
+        scores['description'] += 0.35
+        scores['directions'] -= 0.4
+        scores['alt'] -= 0.9
+    elif len(chunk) > 70:
+        scores['description'] += 0.25
+        scores['address'] -= 0.7
+        scores['directions'] -= 0.2
+        scores['alt'] -= 0.6
+    elif len(chunk) > 25:
+        scores['address'] -= 0.5
+    
+    if len(chunk) > 25:
+        # Fresh, as for all options > 25
+        scores['price'] -= 0.15
+    else:
+        scores['description'] -= 0.1
+
+    if position == 0:
+        # No need for further heuristics
+        return 'name'
+    elif 1 <= position <= 2:
+        scores['address'] += 0.5
+        scores['directions'] += 0.15
+        scores['alt'] += 0.1
+        scores['hours'] -= 0.3
+    elif position >= 3:
+        scores['address'] -= 0.6
+        scores['description'] += 0.3
+
+    digit_cnt = sum(1 for c in chunk if c in string.digits)
+    if digit_cnt == 0:
+        scores['address'] -= 0.3
+        scores['price'] -= 1
+        scores['fax'] -= 1
+        scores['phone'] -= 1
+        scores['hours'] -= 0.7
+    else:
+        zero_cnt = sum(1 for c in chunk if c in '0')
+        if zero_cnt > 3:
+            scores['price'] += zero_cnt * 0.25
+            scores['phone'] -= 0.3
+            scores['fax'] -= 0.3
+        continuous = re.findall(r'\d+', ''.join(c for c in chunk if c in chunk_word_filter))
+        continuous_len = max(len(x) for x in continuous)
+        if continuous_len > 5:
+            scores['phone'] += 1.4
+            scores['fax'] += 1.3
+        elif continuous_len <= 4:
+            scores['address'] += 0.5
+        continuous = [int(x) for x in continuous]
+        if any(1700 < x < 2050 for x in continuous):
+            # Probably historical date, not price
+            scores['price'] -= 0.5
+            scores['address'] -= 0.3
+        year = datetime.now().year
+        if any(year-5 <= x <= year+1 for x in continuous):
+            # Probably recent date
+            scores['hours'] += 0.1
+
+    # Do exact matching on unmodified string     
+    c_len = len(chunk) * 2
+    for chunk_type, words in chunk_type_categories_partly.items():
+        for word in words:
+            pos = chunk.find(word)
+            if pos != -1:
+                # Upscale the partly matches as they are quite
+                # Good indicators
+                scores[chunk_type] += (c_len - pos) / c_len * 1.2
+                
+    cl = ''.join(c for c in chunk.lower() if c in chunk_type_filter)
+    cl_splt = cl.split()
+    wc = len(cl_splt) + wc_offset
+    for cnt, word in enumerate(cl_splt):
+        for chunk_type in chunk_type_categories.keys():
+            if word in chunk_type_categories[chunk_type]:
+                # Rate words by their position in the
+                # string, the later, the less important
+                scores[chunk_type] += (wc - cnt) / wc
+        if word not in chunk_combined_set:
+            scores['description'] += 0.07
+        if word in chunk_description_fuzz:
+            scores['description'] += 0.1
+
+    # Sort by score, highest first
+    results = sorted(scores.iteritems(), key=lambda x: x[1], reverse=True)
+    # print position, ':', chunk, '     |', ', '.join('%s: %.2f' % nf for nf in results)
+    if full_list:
+        return results
+    return results[0][0]
 
 def read_untagged(untagged_str):
     """ Determine type of tag by counting buzz words. Separate string into chunks and analyze
@@ -331,9 +432,7 @@ def read_untagged(untagged_str):
     """
     tag_type = determine_tagtype(untagged_str)
     chunks = chunkify(untagged_str)
-    cl = len(chunks) + 3 # Offset
-    positions = [(cl - i)  /  cl for i in xrange(len(chunks))]
-    chunk_types = map(classify_chunk, chunks, positions)
+    chunk_types = map(classify_chunk, chunks, range(len(chunks)))
     # TODO: Merge all identified parts grouped by their chunk_type in order
     d = dict()
     d['type'] = tag_type
