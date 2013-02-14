@@ -18,7 +18,7 @@ html_template = u"""<!DOCTYPE html>
     <div>
         <p>Enter text to parse and convert formatting from <a href="http://de.wikivoyage.org/wiki/Vorlage:VCard">vCard</a>
              to <a href="https://en.wikivoyage.org/wiki/Wikivoyage:Listings">listing tag</a> or vice versa</p>
-        <form action="/" id="converter" method="post">
+        <form action="{script_path}" id="converter" method="post">
             <textarea name="convertinput" rows="12" cols="150">{default_input}</textarea>
             <p>Output type:
                 <select name="outputformat">
@@ -44,9 +44,10 @@ div_output = u"""<div id="output">
 formatter = TolerantFormatter()
 defaultinput = u'Some samples:\n* ' + '\n* '.join((untaggeds[2], untaggeds[9], tags[0], vcards[0]))
 
-def create_page(input_str, output, outputformat='vcard'):
+def create_page(input_str, output, outputformat='vcard', script_path='/'):
     output = u'\n\n* '.join(output) if input else None
     output = div_output.format(output='* ' + output) if output else ''
-    params = dict(output_template=output, default_input=input_str or defaultinput)
+    params = dict(output_template=output, default_input=input_str or defaultinput,
+                  script_path=script_path)
     params[outputformat + '_selected'] = u'selected="selcted"'
     return formatter.format(html_template, **params)

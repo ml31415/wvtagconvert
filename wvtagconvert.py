@@ -221,6 +221,7 @@ def parse_wikicode(input_str, format='vcard'):
 
 if __name__ == '__main__':
     import sys
+    import os
     import cgi
     import cgitb
     cgitb.enable()
@@ -228,8 +229,8 @@ if __name__ == '__main__':
     form = cgi.FieldStorage()
     input_str = form.getfirst('convertinput', '')
     outputformat = form.getfirst('outputformat', 'vcard')
-    output = parse_wikicode(input_str, outputformat)
-    page = create_page(input_str, output, outputformat).decode('utf8')
+    output = parse_wikicode(input_str, outputformat, script_path=os.path.basename(__file__))
+    page = create_page(input_str, output, outputformat, script_path=__name__).decode('utf8')
     header =  u"Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)

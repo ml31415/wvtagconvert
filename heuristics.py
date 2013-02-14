@@ -6,12 +6,15 @@ Created on 14.02.2013
 '''
 from __future__ import division
 
+import sys
 import re
 import string
 from datetime import datetime
 from collections import defaultdict
 
 from utils import find_any
+
+__re_27 = sys.version_info.major >= 3 or (sys.version_info.major == 2 and sys.version_info.minor >= 7)  
 
 __all__ = ['determine_tagtype', 'chunkify', 'classify_chunk', 'merge_chunks']
 
@@ -187,7 +190,10 @@ def parse_phonefax(s, verbose=False):
     
     
 abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
-abbreviations_filter = r'\s(\w|%s)\.' % '|'.join(abbreviations)
+abbreviations_26 = [abbr.capitalize() for abbr in abbreviations]
+abbreviations_filter_base = r'\s(\w|%s)\.'
+abbreviations_filter_27 = abbreviations_filter_base % '|'.join(abbreviations)
+abbreviations_filter_26 = abbreviations_filter_base % '|'.join(abbreviations + abbreviations_26)
 closing_delimiter = {'(': ')', '[': ']'}
 def chunkify(s, verbose=False):
     """ Split the string into meaningful chunks determined by
@@ -197,7 +203,11 @@ def chunkify(s, verbose=False):
     # Remove irrelevant dots, which disturb parsing
     s = re.sub(r'\.\s*,', ',', s)
     s = re.sub(r'\.\s*:', '', s)
-    s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
+    
+    if __re_27:
+        s = re.sub(abbreviations_filter_27, r' \1', s, flags=re.IGNORECASE)
+    else:
+        s = re.sub(abbreviations_filter_26, r' \1', s)
     if s.startswith("'''"):
         # We know, that fat is only a relevant block if it is
         # used right in the beginning, so exclude this from
