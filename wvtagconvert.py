@@ -230,7 +230,7 @@ if __name__ == '__main__':
     input_str = form.getfirst('convertinput', '')
     outputformat = form.getfirst('outputformat', 'vcard')
     output = parse_wikicode(input_str, outputformat)
-    page = create_page(input_str, output, outputformat, script_path=os.path.basename(__file__)).decode('utf8')
+    page = create_page(input_str, output, outputformat, script_path=os.path.basename(__file__)).encode('utf8')
     header =  u"Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)
