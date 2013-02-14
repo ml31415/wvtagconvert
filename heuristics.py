@@ -169,11 +169,15 @@ def determine_tagtype(untagged_str):
 
 
 phone_splitter = set(['tel', 'nr', 'no', 'phone', 'number', 'fax', 'e-mail', 'email', u'☎'])
+phone_splitter_26 = phone_splitter | set([x.capitalize() for x in phone_splitter] + ['E-Mail'])
 def parse_phonefax(s, verbose=False):
     """ Split strings like 'phone 2343434 Fax +343434 tel 3000777', 
         which don't have any helping punctuation.
     """
-    pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
+    if __re_27:
+        pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
+    else:
+        pts = re.split(r'(%s)' % '|'.join(phone_splitter_26), s)
     parsed_pts = []
     for pt in pts:
         pt = pt.strip()
@@ -192,7 +196,7 @@ def parse_phonefax(s, verbose=False):
 abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
 abbreviations_26 = [abbr.capitalize() for abbr in abbreviations]
 abbreviations_filter_base = r'\s(\w|%s)\.'
-abbreviations_filter_27 = abbreviations_filter_base % '|'.join(abbreviations)
+abbreviations_filter = abbreviations_filter_base % '|'.join(abbreviations)
 abbreviations_filter_26 = abbreviations_filter_base % '|'.join(abbreviations + abbreviations_26)
 closing_delimiter = {'(': ')', '[': ']'}
 def chunkify(s, verbose=False):
@@ -205,7 +209,7 @@ def chunkify(s, verbose=False):
     s = re.sub(r'\.\s*:', '', s)
     
     if __re_27:
-        s = re.sub(abbreviations_filter_27, r' \1', s, flags=re.IGNORECASE)
+        s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
     else:
         s = re.sub(abbreviations_filter_26, r' \1', s)
     if s.startswith("'''"):

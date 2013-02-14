@@ -227,7 +227,7 @@ if __name__ == '__main__':
     cgitb.enable()
     
     form = cgi.FieldStorage()
-    input_str = form.getfirst('convertinput', '')
+    input_str = form.getfirst('convertinput', '').decode('utf8')
     outputformat = form.getfirst('outputformat', 'vcard')
     output = parse_wikicode(input_str, outputformat)
     page = create_page(input_str, output, outputformat, script_path=os.path.basename(__file__)).encode('utf8')
