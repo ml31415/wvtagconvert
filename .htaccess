@@ -4,12 +4,7 @@ AddHandler cgi-script .py
 Order Deny,Allow
 Deny from all
 
-<FilesMatch "*\.py$">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>
-
-<Files wvconvert.py>
+<Files wvtagconvert.py>
     Order Allow,Deny
     Allow from all
 </Files>

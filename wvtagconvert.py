@@ -9,7 +9,6 @@ Michael Loeffler
 '''
 import re
 import string
-import cgi
 import operator
 from itertools import groupby
 from xml.etree import ElementTree
@@ -221,12 +220,17 @@ def parse_wikicode(input_str, format='vcard'):
     
 
 if __name__ == '__main__':
+    import sys
+    import cgi
+    import cgitb
+    cgitb.enable()
+    
     form = cgi.FieldStorage()
     input_str = form.getfirst('convertinput', '')
     outputformat = form.getfirst('outputformat', 'vcard')
     output = parse_wikicode(input_str, outputformat)
-    page = create_page(input_str, output, outputformat)
-    print "Content-Type: text/html"
-    print "Content-Length: %s" % len(page)
-    print
-    print page
+    page = create_page(input_str, output, outputformat).decode('utf8')
+    header =  u"Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
+    sys.stdout.write(header)
+    sys.stdout.write(page)
+    sys.stdout.flush()

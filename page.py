@@ -29,7 +29,6 @@ html_template = u"""<!DOCTYPE html>
             </p>
         </form>
     </div>
-    
     {output_template}
 </div>
 </body>
