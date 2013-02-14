@@ -10,20 +10,12 @@ from __future__ import division
 
 import re
 import string
+import operator
 from datetime import datetime
 from collections import defaultdict
+from itertools import groupby
 from lxml import etree, html
 
-
-class TolerantFormatter(string.Formatter):
-    """ In case of missing arguments: Ignore them and insert an empty string """
-    def get_value(self, key, args, kwargs):
-        try:
-            return string.Formatter.get_value(self, key, args, kwargs)
-        except KeyError:
-            return ''
-
-string_formatter = TolerantFormatter()
 html_parser = etree.HTMLParser()
 
 def squeeze(s):
@@ -48,6 +40,98 @@ def singular(w):
         return w
 
 
+class TolerantFormatter(string.Formatter):
+    """ In case of missing arguments: Ignore them and insert an empty string """
+    def get_value(self, key, args, kwargs):
+        try:
+            return string.Formatter.get_value(self, key, args, kwargs)
+        except KeyError:
+            return ''
+
+string_formatter = TolerantFormatter()
+
+
+class Sanitizer(object):
+    """ Fixes parsed information """
+    item_lookup = {'phone': 'numbers', 'mobile': 'numbers', 'fax': 'numbers', 'fax-mobile': 'numbers'}
+
+    @classmethod
+    def description(cls, description):
+        description = description.lstrip(""";., """)
+        if description:
+            description = description[0].upper() + description[1:]
+            for err_str in ("'''", "''"):
+                if description.count(err_str) == 1:
+                    description = description.replace(err_str, '')
+            if description[-1] not in '.!?':
+                description += '.'
+        return description
+
+    @classmethod    
+    def directions(cls, directions):
+        return directions.replace("'", '').strip()
+    
+    @classmethod
+    def numbers(cls, number):
+        number = number.lstrip(';., ')
+        if '+' in number:
+            number = '+' + number.split('+', 1)[1]
+        elif not number.startswith(tuple('+(0123456789'.split())):
+            number = number.lstrip((string.ascii_letters + ' :/'))
+        if number:
+            if not number.startswith('('):
+                # Remove (0) things including the 0 inside strings
+                number = re.sub(r'\(\s*0\s*\)', ' ', number)
+            number = re.sub(r'[()/.\\-]', ' ', number)
+            number = squeeze(number)
+            # Avoid single leading zeros
+            if number[0] == '0' and number[1] == ' ':
+                number = '0' + number[2:]
+            number = number.replace("'", '')
+        return number
+    
+    @classmethod
+    def url(cls, url):
+        if url.startswith('['):
+            # Remove wiki syntax and trailing link text
+            url = url.strip('[] ')
+            if ' ' in url:
+                url = url.split(' ', 1)[0]
+        if not url.startswith('http://') and not '//' in url:
+            url = 'http://' + url
+        return url
+            
+    @classmethod
+    def email(cls, email):
+        if ':' in email:
+            # Remove mailto: and email: things
+            email = email.split(':', 1)[1].strip()
+        return email.split(' ')[0].replace("'", '')
+    
+    @classmethod
+    def price(cls, price):
+        return price[0].upper() + price[1:].rstrip('., ')
+
+    @classmethod
+    def default(cls, val):
+        return val
+
+    @classmethod
+    def sanitize_item(cls, key, val):
+        key = squeeze(key)
+        val = squeeze(val)
+        if val:
+            func_name = cls.item_lookup.get(key, key)
+            if func_name.startswith('sanitize'):
+                func_name = 'default'
+            val = getattr(cls, func_name, cls.default)(val)
+        return key, val
+
+    @classmethod
+    def sanitize(cls, d):
+        return dict(cls.sanitize_item(key, val) for key, val in d.iteritems())
+
+
 tag_vcard_type_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 tag_template = '<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" fax="{fax}" url="{url}" hours="{hours}" price="{price}" lat="{lat}" long="{long}">{description}</{type}>'
 tag_search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(tag_vcard_type_translation.keys()))
@@ -60,7 +144,7 @@ vcard_number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
 
 
 # Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
-untagged_search = r"""^\*:*?\s{0,3}'''.{3,40}'''[,. ].{20,2000}\."""
+untagged_search = r"""^(?:\*[:*]*\s{0,3})?'''.{3,40}'''[,. ].{20,2000}"""
 untagged_buzzwords = dict(
     sleep = ['room', 'lodge', 'lodging', 'aircon', 'a/c',
              'tv', 'wifi', 'shower', 'breakfast', 'clean',
@@ -229,6 +313,7 @@ def parse_phonefax(s, verbose=False):
         return [pt.strip() for pt in parsed_pts[0].rsplit(',', 1)]
     return parsed_pts
     
+    
 abbreviations = 'ave bldg blvd dr expy fwy hwy ln pkwy pl rd st jl th tel nr no'.split()
 abbreviations_filter = r'\s(\w|%s)\.' % '|'.join(abbreviations)
 closing_delimiter = {'(': ')', '[': ']'}
@@ -305,7 +390,7 @@ chunk_type_categories = dict(
                  'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
                  '24', 'late', 'noon', 'midnight']),
     fax = set(['fax', 'number']),
-    price = set(['rates', 'start', 'only', 'cheap'])
+    price = set(['rates', 'start', 'only', 'cheap', 'from', 'to', 'euro'])
 )
 
 chunk_type_categories_partly = dict(
@@ -315,7 +400,8 @@ chunk_type_categories_partly = dict(
     fax = set(['+']),
     email = set(['@', '.com', '.org', '.net']),
     hours = set(['AM', 'PM']),
-    price = set(['$', 'USD', u'€', 'EUR', u'¥', 'JPY', u'£', 'GBP', 
+    price = set(['$', 'USD', 'dollar', u'€', 'EUR',
+                 u'¥', 'JPY', u'£', 'GBP', 
                  u'¥', 'RMB', 'yuan', u'₹', 'INR', 'rupees'
                  u'₱', 'PHP', 'pesos', u'₪', 'NIS', 'shekels',
                  u'₩', 'KRW', u'฿', 'baht',
@@ -424,19 +510,55 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
         return results
     return results[0][0]
 
+def merge_chunks(chunks, origin):
+    separators = []
+    for cnt, chunk in enumerate(chunks):
+        pos = origin.find(chunk)
+        if pos == -1:
+            separators.append('.')
+        else:
+            pos += len(chunk)
+            m = re.search(r'\S', origin[pos:])
+            if not m:
+                separators.append('.')
+            else:
+                c = origin[pos+m.start()]
+                separators.append(c if c in '.,()' else '.')
+
+    if separators[-1] == '(':
+        separators[-1] = '.'
+    elif separators[-1] == ')' and not '(' in separators[:-1]:
+        separators[-1] = '.'
+        
+    res = ''
+    for chunk, sep in zip(chunks, separators):
+        res += chunk
+        if sep in '.,)':
+            res += sep + ' '
+        elif sep == '(':
+            res += ' ' + sep
+    return res
+    
+
+untagged_unique_items = set(['name', 'address', 'phone', 'fax', 'email', 'url'])
 def read_untagged(untagged_str):
     """ Determine type of tag by counting buzz words. Separate string into chunks and analyze
         the chunks separately. Determine the type (name, address, direction, description)
         of the chunk by counting characteristics (http found, mailto found, type of encapsulation, ...).
         
     """
+    untagged_str = unicode(untagged_str)
     tag_type = determine_tagtype(untagged_str)
     chunks = chunkify(untagged_str)
     chunk_types = map(classify_chunk, chunks, range(len(chunks)))
-    # TODO: Merge all identified parts grouped by their chunk_type in order
-    d = dict()
-    d['type'] = tag_type
-    return d
+    # Group all identified parts
+    d = dict((k, (g.next()[1] if k in untagged_unique_items else 
+                  merge_chunks(list(i[1] for i in g), untagged_str)))  
+             for k, g in groupby(sorted(zip(chunk_types, chunks), 
+                            key=operator.itemgetter(0)), key=operator.itemgetter(0)))
+    d['type'] = tag_type[0]
+    d['subtype'] = tag_type[1]
+    return Sanitizer.sanitize(d)
     
 def read_vcard(vcard_str):
     vcard_str, description = unicode(vcard_str).split('}}', 1)
@@ -444,7 +566,7 @@ def read_vcard(vcard_str):
     d = dict((p[0].strip().lower(), p[1].strip()) for p in pts)
     if 'description' not in d and description:
         d['description'] = description
-    return sanitize(d)
+    return Sanitizer.sanitize(d)
 
 def read_tag(tag_str):
     t = html.fromstring(unicode(tag_str), parser=html_parser)
@@ -452,38 +574,7 @@ def read_tag(tag_str):
     d['type'] = t.tag
     if t.text:
         d['description'] = t.text
-    return sanitize(d)
-    
-def sanitize(d):
-    """ Fix usual listing errors """
-    d = dict((squeeze(key), squeeze(val)) for key, val in d.iteritems())
-    description = d.get('description', '').lstrip(""";., """)
-    if description:
-        d['description'] = description[0].upper() + description[1:]
-    else:
-        d.pop('description', None)
-    for number_item in vcard_number_fields:
-        number = d.get(number_item, '').lstrip(';., ').strip()
-        if number:
-            if not number.startswith('('):
-                # Remove (0) things including the 0 inside strings
-                number = re.sub(r'\(\s*0\s*\)', ' ', number)
-            number = re.sub(r'[()/.,\\-]', ' ', number)
-            number = squeeze(number)
-            # Avoid single leading zeros
-            if number[0] == '0' and number[1] == ' ':
-                number = '0' + number[2:]
-            d[number_item] = number
-        else:
-            d.pop(number_item, None)
-    url = d.get('url', '')
-    if url and not url.startswith('http://') and not '//' in url:
-        url = 'http://' + url
-        d['url'] = url
-    price = d.get('price', '')
-    if price:
-        d['price'] = price[0].upper() + price[1:].rstrip('., ')
-    return d
+    return Sanitizer.sanitize(d)
 
 def make_vcard(d):
     d = d.copy()
@@ -510,11 +601,12 @@ def make_tag(d):
 def parse_input(input_str, format):
     found = []
     for line in input_str.split('\n*'):
+        line = '*' + line
         lst = re.findall(vcard_search, line, flags=re.MULTILINE|re.IGNORECASE)
         found += [read_vcard(l) for l in lst]
         lst = re.findall(tag_search, line, flags=re.DOTALL|re.IGNORECASE)
         found += [read_tag(l[0]) for l in lst]
-        lst = re.findall(untagged_search, line, flags=re.IGNORECASE)
+        lst = re.findall(untagged_search, line, flags=re.MULTILINE)
         found += [read_untagged(l) for l in lst]
     
     if format == 'tag':

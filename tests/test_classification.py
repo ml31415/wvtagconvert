@@ -7,7 +7,7 @@ Created on 11.02.2013
 import unittest
 from itertools import izip_longest
 
-from wvtagconvert import classify_chunk, determine_tagtype, chunkify, parse_phonefax
+from wvtagconvert import classify_chunk, determine_tagtype, chunkify, parse_phonefax, read_untagged
 from samples import untaggeds
 
 
@@ -55,7 +55,7 @@ class TestParsePhonefax(unittest.TestCase):
             self.assertEqual(res, check)
 
 
-class TestSplitInput(unittest.TestCase):
+class TestParseUntaggedInput(unittest.TestCase):
     test_splits = [
         """B4 Bar-Café || 75 D Ben Nghe || A charming Belgian-Vietnamese owned bar, with a welcoming interior and free pool""",
         """Café on Thu Wheels || 1/2 D Nguyen Tri Phuong || It's a little bar owned by the charming lady Thu.""",
@@ -124,16 +124,9 @@ class TestSplitInput(unittest.TestCase):
             else:
                 print chunk_str
                 print chunk_type_str
-            
 
-class TestChunkClassification(unittest.TestCase):
-    test_arr = [
-    
-    
-    
-    
-    
-    ]
+            print read_untagged(item) 
+            
             
 
 if __name__ == "__main__":

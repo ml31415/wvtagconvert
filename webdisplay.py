@@ -7,9 +7,9 @@ from bottle import route, run, request, template
 import urllib2
 
 from wvtagconvert import parse_input, string_formatter
-from tests.samples import vcards, tags
+from tests.samples import vcards, tags, untaggeds
 
-defaultinput = u'* ' + tags[0] + '\n\n* ' + vcards[0]
+defaultinput = u'Some samples:\n* ' + '\n* '.join((untaggeds[2], untaggeds[9], tags[0], vcards[0]))
 
 html_template = u"""<!DOCTYPE html>
 <html lang="en">

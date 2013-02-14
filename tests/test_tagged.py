@@ -9,7 +9,7 @@ from wvtagconvert import parse_input
 
 from samples import vcards, tags
 
-class VcardParserTest(unittest.TestCase):
+class TestVcardParser(unittest.TestCase):
     """ Some very lousy initial test cases """
     def runTest(self):
         teststr = '\n* '.join(vcards)
@@ -20,7 +20,7 @@ class VcardParserTest(unittest.TestCase):
             self.assertIn('name', r)
 
 
-class TagParserTest(unittest.TestCase):
+class TestTagParser(unittest.TestCase):
     def runTest(self):
         teststr = '\n* '.join(tags)
         res = parse_input(teststr, 'vcard')
@@ -28,7 +28,7 @@ class TagParserTest(unittest.TestCase):
         for r in res:
             self.assertIn('type', r)
             self.assertIn('name', r)
-
+            
 
 
 if __name__ == "__main__":
