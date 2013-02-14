@@ -14,7 +14,7 @@ from collections import defaultdict
 
 from utils import find_any
 
-__re_27 = sys.version_info.major >= 3 or (sys.version_info.major == 2 and sys.version_info.minor >= 7)  
+__re_27 = sys.version_info[0] >= 3 or (sys.version_info[1] == 2 and sys.version_info[1] >= 7)  
 
 __all__ = ['determine_tagtype', 'chunkify', 'classify_chunk', 'merge_chunks']
 
