@@ -28,18 +28,18 @@ For local testing:
 
     python -m bottle websrv
    
-Somewhere remote:
+Somewhere remote, either run it as a CGI script or:
 
     python -m bottle --server gevent -b <external_ipaddress> websrv
 
 And then direct your browser to localhost:8080 or <external_ipaddress>:8080
 
 
+
 Requirements
 ============
 * Python 2.6+
-* lxml package
-* bottle package
+* bottle package (for standalone usage only)
 * gevent (optional)
 
 
