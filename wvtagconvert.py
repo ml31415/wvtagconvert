@@ -12,14 +12,12 @@ import string
 import cgi
 import operator
 from itertools import groupby
-from lxml import etree, html
+from xml.etree import ElementTree
 
 import heuristics
 from utils import TolerantFormatter, squeeze
 from page import create_page
 
-
-html_parser = etree.HTMLParser()
 
 
 class Wikiparser(object):
@@ -180,7 +178,7 @@ class Tag(Wikiparser):
     
     @classmethod
     def read(cls, tag_str):
-        t = html.fromstring(unicode(tag_str), parser=html_parser)
+        t = ElementTree.fromstring(unicode(tag_str))
         d = dict(t.items())
         d['type'] = t.tag
         if t.text:
