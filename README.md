@@ -1,8 +1,8 @@
 wvtagconvert
 ============
 
-Wikivoyage formatting converter. Converts list entries from tag listing 
-format used in English wikivoyage to vcard format used in German version.
+Wikivoyage formatting converter. Converts unformatted or tagged list entries
+(Eat / Sleep / Do sections) to vcard or tag format.
 
 * [Vcard specification](http://de.wikivoyage.org/wiki/Vorlage:VCard)
 * [Listing tag specification](https://en.wikivoyage.org/wiki/Wikivoyage:Listings)
@@ -26,11 +26,11 @@ Run
 ===
 For local testing: 
 
-    python -m bottle webdisplay
+    python -m bottle websrv
    
 Somewhere remote:
 
-    python -m bottle --server gevent -b <external_ipaddress> webdisplay
+    python -m bottle --server gevent -b <external_ipaddress> websrv
 
 And then direct your browser to localhost:8080 or <external_ipaddress>:8080
 

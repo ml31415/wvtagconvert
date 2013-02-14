@@ -7,7 +7,8 @@ Created on 11.02.2013
 import unittest
 from itertools import izip_longest
 
-from wvtagconvert import classify_chunk, determine_tagtype, chunkify, parse_phonefax, read_untagged
+from heuristics import classify_chunk, determine_tagtype, chunkify, parse_phonefax
+from wvtagconvert import Untagged
 from samples import untaggeds
 
 
@@ -37,8 +38,10 @@ class TestCategorizeItems(unittest.TestCase):
     ]
     
     def runTest(self):
-        for item, comp in zip(untaggeds, self.test_arr):
-            self.assertEqual(determine_tagtype(item), comp)
+        for cnt, (item, comp) in enumerate(zip(untaggeds, self.test_arr)):
+            tagtype = determine_tagtype(item)
+            self.assertEqual(tagtype, comp, "Test %d: %s != %s: %s" % (
+                            cnt, tagtype, comp, item))
 
 
 class TestParsePhonefax(unittest.TestCase):
@@ -125,7 +128,7 @@ class TestParseUntaggedInput(unittest.TestCase):
                 print chunk_str
                 print chunk_type_str
 
-            print read_untagged(item) 
+            #print Untagged.read(item) 
             
             
 
