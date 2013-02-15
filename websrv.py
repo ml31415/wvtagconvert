@@ -3,8 +3,8 @@ Created on 11.02.2013
 
 @author: nimrod
 '''
-from bottle import route, run, request
 import urllib2
+from bottle import route, run, request
 
 from wvtagconvert import parse_wikicode
 from page import create_page
@@ -14,7 +14,7 @@ icon = None
 @route('/', method=['GET', 'POST'])
 def serve_page():
     input_str = request.forms.get('convertinput', '').decode('utf8')
-    outputformat = request.forms.get('outputformat', 'vcard').lower()
+    outputformat = request.forms.get('outputformat', 'vcard')
     output = parse_wikicode(input_str, outputformat)
     return create_page(input_str, output, outputformat)
 

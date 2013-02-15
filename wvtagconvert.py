@@ -9,6 +9,7 @@ Michael Loeffler
 '''
 import re
 import string
+import sys
 import operator
 from itertools import groupby
 from xml.etree import ElementTree
@@ -115,7 +116,6 @@ class Untagged(Wikiparser):
             of the chunk by counting characteristics (http found, mailto found, type of encapsulation, ...).
             
         """
-        untagged_str = unicode(untagged_str)
         tag_type = heuristics.determine_tagtype(untagged_str)
         chunks = heuristics.chunkify(untagged_str)
         chunk_types = map(heuristics.classify_chunk, chunks, range(len(chunks)))
@@ -144,7 +144,7 @@ class Vcard(Wikiparser):
 
     @classmethod
     def read(cls, vcard_str):
-        vcard_str, description = unicode(vcard_str).split('}}', 1)
+        vcard_str, description = vcard_str.split('}}', 1)
         pts = [pt.split('=') for pt in vcard_str.strip('{},. ').split('|')[1:]]
         d = dict((p[0].strip().lower(), p[1].strip()) for p in pts)
         if 'description' not in d and description:
@@ -173,11 +173,16 @@ class Tag(Wikiparser):
     template = ('<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" '
                 'fax="{fax}" url="{url}" hours="{hours}" price="{price}" lat="{lat}" '
                 'long="{long}">{description}</{type}>')
+    xml_header = u'<?xml version="1.0" encoding="UTF-8" ?>\n'
     formatter = TolerantFormatter()
     
     @classmethod
     def read(cls, tag_str):
-        t = ElementTree.fromstring(unicode(tag_str))
+        if sys.version_info[:2] < (2, 7):
+            tag_str =  cls.xml_header + tag_str
+            t = ElementTree.fromstring(tag_str.encode('utf8'))
+        else:
+            t = ElementTree.fromstring(tag_str)
         d = dict(t.items())
         d['type'] = t.tag
         if t.text:
@@ -211,6 +216,7 @@ def parse_wikicode(input_str, format='vcard'):
         for cls in [Tag, Vcard, Untagged]:
             found += cls.parse(line)
     
+    format = format.lower()
     if format == 'tag':
         return [Tag.tostring(l) for l in found]
     elif format == 'vcard':
@@ -231,7 +237,7 @@ if __name__ == '__main__':
     outputformat = form.getfirst('outputformat', 'vcard')
     output = parse_wikicode(input_str, outputformat)
     page = create_page(input_str, output, outputformat, script_path=os.path.basename(__file__)).encode('utf8')
-    header =  u"Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
+    header =  "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)
     sys.stdout.flush()

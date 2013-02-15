@@ -14,7 +14,6 @@ from collections import defaultdict
 
 from utils import find_any
 
-__re_27 = sys.version_info[0] >= 3 or (sys.version_info[1] == 2 and sys.version_info[1] >= 7)  
 
 __all__ = ['determine_tagtype', 'chunkify', 'classify_chunk', 'merge_chunks']
 
@@ -174,7 +173,7 @@ def parse_phonefax(s, verbose=False):
     """ Split strings like 'phone 2343434 Fax +343434 tel 3000777', 
         which don't have any helping punctuation.
     """
-    if __re_27:
+    if sys.version_info[:2] < (2, 7):
         pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
     else:
         pts = re.split(r'(%s)' % '|'.join(phone_splitter_26), s)
@@ -208,7 +207,7 @@ def chunkify(s, verbose=False):
     s = re.sub(r'\.\s*,', ',', s)
     s = re.sub(r'\.\s*:', '', s)
     
-    if __re_27:
+    if sys.version_info[:2] < (2, 7):
         s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
     else:
         s = re.sub(abbreviations_filter_26, r' \1', s)
