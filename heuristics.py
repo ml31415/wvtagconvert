@@ -174,9 +174,9 @@ def parse_phonefax(s, verbose=False):
         which don't have any helping punctuation.
     """
     if sys.version_info[:2] < (2, 7):
-        pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
-    else:
         pts = re.split(r'(%s)' % '|'.join(phone_splitter_26), s)
+    else:
+        pts = re.split(r'(%s)' % '|'.join(phone_splitter), s, flags=re.IGNORECASE)
     parsed_pts = []
     for pt in pts:
         pt = pt.strip()
@@ -208,9 +208,9 @@ def chunkify(s, verbose=False):
     s = re.sub(r'\.\s*:', '', s)
     
     if sys.version_info[:2] < (2, 7):
-        s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
-    else:
         s = re.sub(abbreviations_filter_26, r' \1', s)
+    else:
+        s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
     if s.startswith("'''"):
         # We know, that fat is only a relevant block if it is
         # used right in the beginning, so exclude this from
