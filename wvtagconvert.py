@@ -203,7 +203,8 @@ class Tag(Wikiparser):
         type_lower = d['type'].lower()
         type_lower = cls.tagtype_translation.get(type_lower, type_lower)
         if type_lower not in cls.types:
-            d['type'] = heuristics.determine_tagtype(type_lower)[0]
+            type_lower = heuristics.determine_tagtype(type_lower)[0]
+        d['type'] = type_lower
         phone_prefix = d.get('intl-area-code')
         if phone_prefix:
             phone_prefix += ' '
