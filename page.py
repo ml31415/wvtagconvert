@@ -16,8 +16,11 @@ html_template = u"""<!DOCTYPE html>
 <div id="main">
     <h1>Wikivoyage Vcard-Tag Converter</h1>
     <div>
-        <p>Enter text to parse and convert formatting from <a href="http://de.wikivoyage.org/wiki/Vorlage:VCard">vCard</a>
-             to <a href="https://en.wikivoyage.org/wiki/Wikivoyage:Listings">listing tag</a> or vice versa</p>
+        <p>Enter wikicode listings to parse and convert formatting to either <a href="http://de.wikivoyage.org/wiki/Vorlage:VCard">vCard</a>
+             or <a href="https://en.wikivoyage.org/wiki/Wikivoyage:Listings">listing tag</a> format. Please  
+             <a href="https://github.com/ml31415/wvtagconvert/issues/1">report parsing errors</a>. 
+             <a href="https://github.com/ml31415/wvtagconvert">Source code</a> is available.
+        </p>
         <form action="{script_path}" id="converter" method="post">
             <textarea name="convertinput" rows="12" cols="150">{default_input}</textarea>
             <p>Output type:
