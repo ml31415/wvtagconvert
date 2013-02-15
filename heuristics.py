@@ -9,11 +9,11 @@ from __future__ import division
 import sys
 import re
 import string
+import operator
 from datetime import datetime
 from collections import defaultdict
 
 from utils import find_any
-
 
 __all__ = ['determine_tagtype', 'chunkify', 'classify_chunk', 'merge_chunks']
 
@@ -23,7 +23,7 @@ buzzwords = dict(
              'tv', 'wifi', 'shower', 'breakfast', 'clean',
              'laundry', 'balcony', 'window', 'baggage', 'cable',
              'bed', 'fan', 'fridge', 'bathroom', 'lobby',
-             'accomodate', 'guest', 'price', 'accomodate',
+             'accomodate', 'guest', 'price', 'accomodation',
              'smell', 'cleaned', 'staff', 'service'],
     hotel = ['hotel', 'hyatt', 'novotel', 'sofitel', 'hilton',
              'sheraton', 'kingsize', 'airport pickup', 'minibar',
@@ -31,26 +31,48 @@ buzzwords = dict(
              'square', 'star', 'sauna', 'taxi',
              'residence', 'resort', 'buffet', 'fitness room', 
              'suite', 'reservation', 'exclusive', 'elegant'],
-    hostel = ['hostel', 'dorm', 'dormitory', 'backpacker', 'shared'],
-    guesthouse = ['guesthouse', 'guest house', 'house', 'homely'],
+    hostel = ['hostel', 'dorm', 'dormitory', 'backpacker', 'shared',
+              'budget', 'cheap'],
+    guesthouse = ['guesthouse', 'guest house', 'house', 'homely',
+                  'cheap', 'budget', 'traditional'],
     
     restaurant = ['restaurant', 'eat', 'food', 'kitchen', 'cuisine',  
             'breakfast', 'wine', 'culinary', 'noodle', 'meal', 
             'kebab', 'soup', 'egg', 'buffet',
             'vegetarian', 'beef', 'chicken', 'pork', 'portion',
             'salad', 'fruit', 'lunch', 'dinner', 'dish', 'chef',
-            'tapas', 'dining', 'halal',
-            'dumpling', 'duck', 'specialities', 'wifi'],
+            'dining', 'halal', 'dumpling', 'duck', 'specialities', 'wifi'],
     fastfood = ['fastfood', 'burger', 'hot dog', 'french fries',
                 'chicken wings', 'kfc', 'mcdonalds', 'sandwich',
                 'baguette', 'bistro'],
-    seafood = ['seafood', 'fish', 'crab', 'oyster'],
+    indian = ['indian', 'curry', 'masala', 'tikki', 'tandoori',
+              'samosa', 'biryani', 'kerala'],
+    seafood = ['seafood', 'fish', 'crab', 'oyster', 'tuna',
+               'salmon', 'squid', 'lobster', 'octopus', 'shrimp',
+               'scampi', 'herring', 'shark', 'rollmops', 'snapper'],
     asian = ['asian', 'curry', 'suckling pig', 'vietnamese', 
              'chinese', 'spring roll', 'rice', 'spicy',
              'thai', 'pho', 'filipino'],
     italian = ['italian', 'pizza', 'pasta', 'spaghetti',
-               'bolognese', 'fettuccine', 'risotto'],
-    
+               'bolognese', 'fettuccine', 'risotto',
+               'ristorante', 'minestrone', 'prosciutto', 'insalata',
+               'caprese', 'bruschetta', 'ciabatta', 'calzone', 'penne',
+               'gnocchi', 'lasagna', 'ravioli', 'tagliatelle',
+               'tortellini', 'carbonara', 'arrabiata', 'panzanella',
+               'mascarpone', 'tiramisu', 'zabaglione'],
+    german = ['german', 'wiener', 'schnitzel', 'sausage', 'kraut',
+              'bavarian', 'pretzel', 'eintopf', 'cabbage', 'knoedel',
+              'dumpling', 'maultaschen', 'spaetzle', 'braten',
+              'bratwurst', 'frankfurter', 'frikadellen', 'leberkaese',
+              'thueringer', 'roulade'],
+    french = ['baguette', 'bistro', 'crepe', 'quiche', 'croissant',
+              'macaroon', 'pot au feu', 'andouillette', 'raclette',
+              'cassoulet', 'trinxat', 'aubergine', 'ratatouille',
+              'truffle', 'wine'],
+    mexican = ['mexican', 'quesadilla', 'tortilla', 'taquito',
+               'taco', 'empanada', 'enchilada', 'tequila', 'mole',
+               'salsa'],
+
     cafe = ['cafe', u'café', 'coffee', 'drink', 'latte', 'tea', 'ice cream', 
             'juice', 'bistro', 'smoothies', 'yoghurt', 'ca phe', 'waffle', 
             'egg', 'pancake', 'cappuccino', 'donut'],
@@ -101,9 +123,13 @@ buzzwords = dict(
                 'kitsch', 'antiquity', 'exotic'],
                           
     do = ['guide', 'kid', 'event', 'swimming pool'],
-    outdoor = ['outdoor', 'dive', 'diving', 'snorkel', 'hike', 'hiking', 'bike', 
+    outdoor = ['outdoor', 'dive', 'scuba', 'diving', 'snorkel', 'hike', 'hiking', 'bike', 
           'biking', 'fishing', 'swim', 'go', 'ride',
-          'adventure', 'tour'],
+          'adventure', 'tour', 'climbing', 'riding',
+          'horse', 'rafting', 'bungee', 'kite', 'kitesurfing', 'windsurfing',
+          'surfing', 'paragliding', 'helicopter', 'paintball',
+          'karting', 'motocross', 'sandboarding', 'sightseeing',
+          'canoeing', 'kayaking', 'sailing'],
     indoor = ['cinema', 'cineplex', 'badminton', 'aerobic',
           'cooking', 'concert', 'theater', 'dolphinarium', 
           'festival', 'opera', 'zoo'],
@@ -117,7 +143,8 @@ buzzword_filter = set(string.ascii_letters + u" /éäöüß")
 # First: common items, second: Items in subclasses
 categories = dict(
     sleep = ['sleep', ['hotel', 'guesthouse', 'hostel']],
-    eat = ['restaurant', ['seafood', 'asian', 'fastfood', 'italian']],
+    eat = ['restaurant', ['seafood', 'asian', 'fastfood', 'italian', 'indian',
+                          'german', 'french', 'mexican']],
     drink = [None, ['cafe', 'bar', 'nightclub']],
     see = ['see', ['religious', 'historical', 'nature', 'art']],
     buy = ['buy', ['cloth', 'books', 'touristy', 'art']],
@@ -131,6 +158,11 @@ for key, val in categories.items():
                                    *subcategories[key].values())
 
 def determine_category(word_list, category_dict, wc_offset=10, full_list=False):
+    """ Take a whole string and see what it's all about by looking at 
+        the single words in it. Try to fit the words into categories
+        and give it some final rating. 
+    """
+    
     # Give it an offset, so that words in the end are
     # not totally meaningless, maybe needs some more
     # calibration
@@ -143,7 +175,7 @@ def determine_category(word_list, category_dict, wc_offset=10, full_list=False):
                 # string, the later, the less important
                 scores[category] += (wc - cnt) / wc
     # Sort by score, highest first
-    results = sorted(scores.iteritems(), key=lambda x: x[1], reverse=True)
+    results = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
     if full_list:
         return results
     try:
@@ -155,6 +187,7 @@ def determine_tagtype(untagged_str):
     """ Rate the whole string, if it fits into some category. 
         Count occurences of topic related words.
         Prefer word hits closer to the beginning of the string.
+        Also determine some more specific subtype.
     """
     utl = untagged_str.lower()
     utl = ''.join(c if c in buzzword_filter else ' ' for c in utl)
@@ -200,7 +233,7 @@ abbreviations_filter_26 = abbreviations_filter_base % '|'.join(abbreviations + a
 closing_delimiter = {'(': ')', '[': ']'}
 def chunkify(s, verbose=False):
     """ Split the string into meaningful chunks determined by
-        syntactical parts found inside the string.
+        the punctuation and bracketing found inside the string.
     """
     s = s.lstrip('* ')
     # Remove irrelevant dots, which disturb parsing
@@ -212,7 +245,7 @@ def chunkify(s, verbose=False):
     else:
         s = re.sub(abbreviations_filter, r' \1', s, flags=re.IGNORECASE)
     if s.startswith("'''"):
-        # We know, that fat is only a relevant block if it is
+        # We know, that bold markup is only a relevant block if it is
         # used right in the beginning, so exclude this from
         # the loop
         val = re.findall(r"""'''(.*?)'''""", s, flags=re.IGNORECASE)[0]
@@ -267,7 +300,7 @@ chunk_type_categories = dict(
     directions = set(['intersection', 'corner', 'opposite', 'nearby',
                   'near', 'inside', 'behind', 'left', 'right', 'bus',
                   'train', 'station', 'taxi', 'stop', 'next', 'at',
-                  'between']),
+                  'between', 'tube', 'metro', 'subway', 'tram']),
     alt = set(['aka', 'also', 'known', 'former']),
     phone = set(['tel', 'nr', 'phone', 'number', u'☎']),
     email = set(['email', 'e-mail', 'mail', 'mailto']),
@@ -371,7 +404,7 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
             pos = chunk.find(word)
             if pos != -1:
                 # Upscale the partly matches as they are quite
-                # Good indicators
+                # good indicators
                 scores[chunk_type] += (c_len - pos) / c_len * 1.2
                 
     cl = ''.join(c for c in chunk.lower() if c in chunk_type_filter)
@@ -389,7 +422,7 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
             scores['description'] += 0.1
 
     # Sort by score, highest first
-    results = sorted(scores.iteritems(), key=lambda x: x[1], reverse=True)
+    results = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
     # print position, ':', chunk, '     |', ', '.join('%s: %.2f' % nf for nf in results)
     if full_list:
         return results

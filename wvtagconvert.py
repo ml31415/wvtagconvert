@@ -19,7 +19,6 @@ from utils import TolerantFormatter, squeeze
 from page import create_page
 
 
-
 class Wikiparser(object):
     """ Fixes parsed information """
     item_lookup = {'phone': 'numbers', 
@@ -105,7 +104,7 @@ class Wikiparser(object):
 
 
 class Untagged(Wikiparser):
-    # Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
+    # Search criteria: Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
     search = r"""^(?:\*[:*]*\s{0,3})?'''.{3,40}'''[,. ].{20,2000}"""
     unique_items = set(['name', 'address', 'phone', 'fax', 'email', 'url'])
     
@@ -113,8 +112,8 @@ class Untagged(Wikiparser):
     def read(cls, untagged_str):
         """ Determine type of tag by counting buzz words. Separate string into chunks and analyze
             the chunks separately. Determine the type (name, address, direction, description)
-            of the chunk by counting characteristics (http found, mailto found, type of encapsulation, ...).
-            
+            of the chunk by counting characteristics (http found, mailto found, type of 
+            encapsulation, ...).
         """
         tag_type = heuristics.determine_tagtype(untagged_str)
         chunks = heuristics.chunkify(untagged_str)
@@ -155,6 +154,8 @@ class Vcard(Wikiparser):
     def tostring(cls, d):
         d = d.copy()
         d['type'] = cls.tagtype_translation.get(d['type'].lower(), d['type'])
+        if d['type'] == d.get('subtype'):
+            d.pop('subtype', None)
         content = []
         for key in cls.fields:
             if key in d and d[key]:
@@ -209,27 +210,28 @@ class Tag(Wikiparser):
         return [cls.read(l[0]) for l in lst]
     
 
-def parse_wikicode(input_str, format='vcard'):
+def parse_wikicode(input_str, outputformat='vcard'):
     found = []
     for line in input_str.split('\n*'):
         line = '*' + line
         for cls in [Tag, Vcard, Untagged]:
             found += cls.parse(line)
     
-    format = format.lower()
-    if format == 'tag':
+    outputformat = outputformat.lower()
+    if outputformat == 'tag':
         return [Tag.tostring(l) for l in found]
-    elif format == 'vcard':
+    elif outputformat == 'vcard':
         return [Vcard.tostring(l) for l in found]
     else:
-        raise ValueError('Invalid output format: %s' % format)
+        raise ValueError('Invalid output outputformat: %s' % outputformat)
     
 
-if __name__ == '__main__':
+def cgi_display():
     import sys
     import os
     import cgi
     import cgitb
+    
     cgitb.enable()
     
     form = cgi.FieldStorage()
@@ -241,3 +243,8 @@ if __name__ == '__main__':
     sys.stdout.write(header)
     sys.stdout.write(page)
     sys.stdout.flush()
+
+
+if __name__ == '__main__':
+    cgi_display()
+    
