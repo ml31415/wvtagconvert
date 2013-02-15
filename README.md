@@ -13,14 +13,14 @@ http://dev.mldesign.net/wvtagconvert/wvtagconvert.py
 Run
 ===
 For local testing: 
-
-    python -m bottle websrv
-   
+```bash
+python -m bottle websrv
+```
 Somewhere remote, either run it as a CGI script or:
-
-    python -m bottle --server gevent -b <external_ipaddress> websrv
-
-And then direct your browser to localhost:8080 or <external_ipaddress>:8080
+```bash
+python -m bottle --server gevent -b <external_ipaddress> websrv
+```
+And then direct your browser to localhost:8080 or &lt;external_ipaddress&gt;:8080
 
 
 Requirements
@@ -32,4 +32,4 @@ Requirements
 
 Todo
 ====
-* Automatic currency symbol conversion according to style guides
+- [ ] Automatic currency symbol conversion according to style guides
