@@ -85,18 +85,19 @@ buzzwords = dict(
                  'night', 'girl', 'couch', 'jazz', 'open air',
                  'meat market'],
     
-    see = ['museum', 'library', 'exhibition', 'collection'],
+    see = ['museum', 'library', 'exhibition', 'collection', 'sight'],
     religious = ['pagoda', 'cathedral', 'church', 'mosque', 'dome',
                  'temple', 'old', 'goddess', 'holy', 'saint', 'monk',
                  'nun', 'pray', 'spirit', 'meditation', 'diocese',
                  'worship', 'god', 'buddhist', 'buddha', 'budhism', 
                  'allah', 'moslem', 'muslim', 'islam', 'islamic', 'order',
-                 'shrine'],
+                 'shrine', 'monastery'],
     art = ['art', 'gallery', 'paint', 'oil', 'statue', 'wood',
            'decor', 'contemporary'],
-    nature = ['park', 'garden', 'green', 'walk', 'forrest', 'tree',
+    nature = ['park', 'garden', 'green', 'walk', 'forest', 'forrest',
               'lake', 'beach', 'nature', 'untouched', 'view',
-              'national park', 'fountain', 'waterfall'],
+              'national park', 'fountain', 'waterfall', 'fall',
+              'mountain', 'valley', 'scenery', 'tree'],
     historical = ['historical', 'history',
            'palace', 'war', 'tour', 'hall', 'monument', 'tower',
            'emperor', 'king', 'queen', 'prince', 'castle', 'fortress',
@@ -120,7 +121,7 @@ buzzwords = dict(
     books = ['paper', 'book', 'magazin', 'journal', 'print', 
              'newspaper'],
     touristy = ['souvenir', 'watch', 'jewelry', 'present', 'dvd',
-                'kitsch', 'antiquity', 'exotic'],
+                'kitsch', 'antiquity', 'exotic', 'speciality'],
                           
     do = ['guide', 'kid', 'event', 'swimming pool'],
     outdoor = ['outdoor', 'dive', 'scuba', 'diving', 'snorkel', 'hike', 'hiking', 'bike', 
@@ -193,10 +194,10 @@ def determine_tagtype(untagged_str):
     utl = ''.join(c if c in buzzword_filter else ' ' for c in utl)
     utl_splt = utl.split()
     category = determine_category(utl_splt, category_sets) or 'listing'
-    if subcategories[category] and category != 'listing':
-        subcategory = determine_category(utl_splt, subcategories[category])
+    if subcategories.get(category) and category != 'listing':
+        subcategory = determine_category(utl_splt, subcategories[category]) or ''
     else:
-        subcategory = None
+        subcategory = ''
     return category, subcategory
 
 

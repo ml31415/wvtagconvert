@@ -65,6 +65,45 @@ untaggeds = [
     """'''Aninuan Beach Resort''' [http://www.aninuanbeach.com/] Price: USD $50. Phone Number: +63920 931 8946 or +63920 931 8924. """,
 ]
 
+dalat = """* <see name="Colonial palaces">The three palaces and summer home of the colonial-era, last emperor of Vietnam Bao Dai, which is of great interest once you visit these three heritage sites, named as Palace I, II and III, the Dalat Palace Hotel being one of them, with its adjacent Dalat Du Park Hotel, all from the 1922's, together with the Dalat Palace Golf Club, which was built in 1922, to give his majesty the opportunity to practice his golf skills picked up during his years of study in France. The golf course is a awesome site, whether you enjoy the swinging and putting or not, as the coffee shop at the golf course has some wholesome meals of Asian and European making, with great view of the deep green fairways and classy environment. The Palace I is located on the same street when you walk to the Crazy House. It is about 15-30 minutes walk depending on your pace (1.1 km. from Tran Phu, 47 metres elevation gain). Palace II is located on Tran Hung Dao, not far from the Xuan Huong Lake (next to Yersin Park).</see>
+
+[[Image:Hang_Nga_guesthouse_01.jpg|thumb|300px|Crazy House]]
+* <see name="Crazy House" url="http://www.crazyhouse.vn/" price="35,000&nbsp;dong" address="Huỳnh Thúc Kháng, Phường 4" directions="about 0.3 km off Duy Tan St">A striking, not-quite-finished fantasy house designed by the daughter of an independence war hero. Well worth a visit, even if you are not too much interested in architecture.</see>
+
+* <see name="Flower Garden" directions="on the northwestern end of the Xuan Huong Lake" price="10,000&nbsp;dong">A set of flower gardens centered around a re-constructed traditional Vietnamese teakwood house. If you go for a stroll around the lake, it can be visited as a stop.</see>
+
+* <see name="Hill-top pagoda">Best to visit coupled with a brief cable car ride over the pine forest.</see>
+
+* <see name="Langbiang mountain">Best to go there with a Land Rover ride, with spectacular views of Dalat and the surrounding mountains and valleys.</see>
+
+[[Image:Xuan_Huong_Lake_08.jpg|thumb|300px|Xuan Huong Lake]]
+* <see name="Xuan Huong lake" alt="Hồ Xuân Hương" directions="center of town">Public lake in the center. Approximately 5km in length, this lake was made after two dams on the Camly river were destroyed during a storm in the 1930s. Now, Xuan Huong lake is one of the main draws of Da Lat, and you can see honeymooners and locals strolling its banks. Many nice hotels have a view of the lake. The lake was drained in 2010, but is now filled again. Boats can be rented on both sides of the lake.</see>
+
+* <see name="Da Lat market">Filled with local specialities: strawberry jam, fruits conserves, avocado, artichoke.</see>
+
+* <see name="Nha Tho Domaine de Marie" address="Ngo Quyen" directions="1 km from where Hai Thuong and Ba Trang Hai (3 Trang Hai) meets">A pink church on top of a hill, with a store selling various dried fruits and snacks from the local orchards run by the nuns of the monastery.</see>
+
+* <see name="Da Lat train station">Take the steam train through the 7km historical line to Trai Mat, from there you can visit the Linh Phuong pagoda. Price for a return ticket with the train is 106,000&nbsp;dong.</see>
+
+* <see name="Golden Spring lake" alt="Ho Suoi Vang">Rather unspoiled scenery.</see>
+
+* <see name="Thien Vien Truc Lam Monastery" directions="at the top of where the cable car drops you off" price="Free">The monastery has a magnificent view over the dams below and its gardens are full of landscaped shrubs in animal form. Extremely peaceful - a great place to relax and soak in the tranquility. People who do not want to complete the round trip could opt for a 4.1 km walk back to Tran Phu. Be sure to bring a map. On the walk back you can go down to Tuyen Lam lake (see below), visit nearby Dalanta waterfall and take the bus back to town. The cable car to the monastery costs you 50,000&nbsp;dong single way, return 70,000.</see>
+
+* <see name="Lang Biang mountain">The 1,900&nbsp;m peak is reachable by a steep paved path, ideal for a 3 hours hike, or you can ride in a jeep for 40,000&nbsp;dong. Also visit the minorities village under the mountain foot.</see>
+
+[[Image:The Valley of Love in Dalat, Vietnam.jpg|thumb|300px|The Valley of Love]]
+* <see name="Valley of Love" alt="Thung Lũng Tình Yêu" address="Phu Dong Thien Vuong St">Open daily until 5PM. Admission fee under US$1. About 5km outside of town, the Valley of Love is common stop on Dalat tours and is very popular with honeymooners. The Valley of Love is also a great spot for canyoning. See contact info below for canyoning operators.</see>
+
+* <see name="Lake of Sorrow" alt="Lake of Sighs" directions="5km northeast of town on Ho Xuan Huong road">The Lake of Sorrow is another common destination in Dalat. The Lake of Sorrow is so-named because of a tale of two lovers, one who committed suicide after the other was called up to serve in the army.</see>
+
+* <see name="Tuyen Lam Lake" alt="Hồ Tuyền Lâm" directions="5km south of town on highway 20">Its clean green waters flow from the beautiful Tia Spring and from the Da Tam River, which flows down from Voi mountain. Its waters stretch over an immense 350 hectares and because of its various sources, Tuyen Lam is known as the lake where rivers, springs and forests meet. The lake was built in the 80s. It is one of the largest and most beautiful lakes in town. The other side of the lake is the Voi mountain which is a good place for hiking.</see>
+
+* <see name="Prenn Falls" directions="at the foot of Prenn Pass, about 10km outside of town">Open daily until 5PM. A very common stop on a typical Dalat tour, Prenn Falls is quite beautiful but is a lot more fun when you're hiking it than just taking pictures of it.</see>
+
+* <see name="Pongour Falls" directions="30km south of town on highway 20">It's one of the largest and widest waterfalls in Vietnam and during the wet season is a magnificent sight. Although a dam built nearby has reduced the water flow recently.</see>
+"""
+
+
 for lst in (tags, vcards, untaggeds):
     for cnt, val in enumerate(lst):
         lst[cnt] = val.decode('utf8')

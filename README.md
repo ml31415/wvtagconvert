@@ -32,8 +32,6 @@ Requirements
 
 Todo
 ----
-- Usability improvements
-- Reading a page directly by specifying URL
 - Automatic currency symbol conversion according to style guides
 
 

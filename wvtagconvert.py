@@ -10,12 +10,14 @@ Michael Loeffler
 import re
 import string
 import sys
+import json
+import os
 import operator
 from itertools import groupby
 from xml.etree import ElementTree
 
 import heuristics
-from utils import TolerantFormatter, squeeze
+from utils import TolerantFormatter, squeeze, fake_agent_readurl, html_encode, html_decode
 from page import create_page
 
 
@@ -145,9 +147,10 @@ class Vcard(Wikiparser):
     def read(cls, vcard_str):
         vcard_str, description = vcard_str.split('}}', 1)
         pts = [pt.split('=') for pt in vcard_str.strip('{},. ').split('|')[1:]]
-        d = dict((p[0].strip().lower(), p[1].strip()) for p in pts)
-        if 'description' not in d and description:
-            d['description'] = description
+        d = dict((p[0].strip().lower(), p[1]) for p in pts)
+        description = d.setdefault('description', description)
+        if not d.get('subtype') and description:
+            d['subtype'] = heuristics.determine_tagtype(d.get('name', '') + ' ' + description)[1]
         return cls.sanitize(d)
 
     @classmethod
@@ -178,6 +181,7 @@ class Tag(Wikiparser):
     
     @classmethod
     def read(cls, tag_str):
+        tag_str = tag_str.lstrip('*: ')
         if sys.version_info[:2] < (2, 7):
             tag_str =  cls.xml_header + tag_str
             t = ElementTree.fromstring(tag_str.encode('utf8'))
@@ -187,6 +191,7 @@ class Tag(Wikiparser):
         d['type'] = t.tag
         if t.text:
             d['description'] = t.text
+            d['subtype'] = heuristics.determine_tagtype(d['name'] + ' ' + d['description'])[1]
         return cls.sanitize(d)
     
     @classmethod
@@ -210,14 +215,21 @@ class Tag(Wikiparser):
     
 
 def parse_wikicode(input_str, outputformat='vcard'):
+    input_str = html_decode(input_str)
     found = []
     for line in input_str.split('\n*'):
         line = '*' + line
         for cls in [Tag, Vcard, Untagged]:
-            found += cls.parse(line)
+            try:
+                found += cls.parse(line)
+            except ValueError:
+                pass
     
-    outputformat = outputformat.lower()
-    if outputformat == 'tag':
+    if outputformat == 'raw':
+        return found
+    elif outputformat == 'json':
+        return [json.dumps(l) for l in found]
+    elif outputformat == 'tag':
         return [Tag.tostring(l) for l in found]
     elif outputformat == 'vcard':
         return [Vcard.tostring(l) for l in found]
@@ -225,19 +237,58 @@ def parse_wikicode(input_str, outputformat='vcard'):
         raise ValueError('Invalid output outputformat: %s' % outputformat)
     
 
-def cgi_display():
-    import sys
-    import os
+def get_from_link(input_str):
+    input_str = input_str.strip()
+    if (input_str.count('\n') <= 1 and input_str.startswith('http://') and 
+            'action=edit' in input_str and 'wikivoyage' in input_str):
+        input_str = fake_agent_readurl(input_str).decode('utf8')
+        try:
+            t = ElementTree.fromstring(input_str)
+        except Exception:
+            try:
+                input_str = re.findall(r'<textarea [^>]*id="wpTextbox1".*?>(.*?)</textarea>', input_str, flags=re.DOTALL)[0]
+            except IndexError:
+                raise ValueError('No textarea found in the linked page')
+        else:
+            try:
+                input_str = t.xpath("//textarea[@id='wpTextbox1']").text
+            except Exception:
+                raise ValueError("No wiki edit field found in the linked page")
+        return html_decode(input_str)
+    return input_str
+
+
+def create_html(input_str, outputformat='vcard', script_path='/'):
+    outputformat = outputformat.lower()
+    input_str = input_str.decode('utf8')
+    try:
+        input_str = get_from_link(input_str)
+    except ValueError as e:
+        output = str(e)
+    else:
+        output = parse_wikicode(input_str, outputformat)
+
+    if not input_str:
+        output = None
+    elif outputformat in ('vcard', 'tag'):
+        output = u'* ' + u'\n\n* '.join(output)
+    elif outputformat == 'json':
+        output = u'[%s]' % u',\n'.join(output)
+    else:
+        output = u'No entries found.'
+    return create_page(html_encode(input_str), output, outputformat, 
+                       script_path=script_path).encode('utf8')
+
+
+def cgi_serve_page():
     import cgi
     import cgitb
-    
+
     cgitb.enable()
-    
     form = cgi.FieldStorage()
-    input_str = form.getfirst('convertinput', '').decode('utf8')
     outputformat = form.getfirst('outputformat', 'vcard')
-    output = parse_wikicode(input_str, outputformat)
-    page = create_page(input_str, output, outputformat, script_path=os.path.basename(__file__)).encode('utf8')
+    input_str = form.getfirst('convertinput', '')
+    page = create_html(input_str, outputformat, script_path=os.path.basename(__file__).rstrip('c'))
     header =  "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)
@@ -245,5 +296,4 @@ def cgi_display():
 
 
 if __name__ == '__main__':
-    cgi_display()
-    
+    cgi_serve_page()
