@@ -52,5 +52,5 @@ def create_page(input_str, output, outputformat='vcard', script_path='/'):
     output = div_output.format(output='* ' + output) if output else ''
     params = dict(output_template=output, default_input=input_str or defaultinput,
                   script_path=script_path)
-    params[outputformat + '_selected'] = u'selected="selcted"'
+    params[outputformat.lower() + '_selected'] = u'selected="selcted"'
     return formatter.format(html_template, **params)

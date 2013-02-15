@@ -158,8 +158,7 @@ class Vcard(Wikiparser):
             d.pop('subtype', None)
         content = []
         for key in cls.fields:
-            if key in d and d[key]:
-                content.append("%s=%s" % (key, d[key]))
+            content.append("%s=%s" % (key, d.get(key, '')))
         return '{{vCard| %s}}' % '| '.join(content)
 
     @classmethod
@@ -169,11 +168,11 @@ class Vcard(Wikiparser):
 
 
 class Tag(Wikiparser):
-    fields = 'eat', 'drink', 'buy', 'do', 'see', 'sleep'
+    fields = 'eat', 'drink', 'buy', 'do', 'see', 'sleep', 'tollfree'
     search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(fields))
     template = ('<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" '
-                'fax="{fax}" url="{url}" hours="{hours}" price="{price}" lat="{lat}" '
-                'long="{long}">{description}</{type}>')
+                'fax="{fax}" url="{url}" hours="{hours}" price="{price}" tollfree="{tollfree}" '
+                'lat="{lat}" long="{long}">{description}</{type}>')
     xml_header = u'<?xml version="1.0" encoding="UTF-8" ?>\n'
     formatter = TolerantFormatter()
     
