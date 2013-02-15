@@ -171,13 +171,16 @@ class Vcard(Wikiparser):
 
 
 class Tag(Wikiparser):
-    fields = 'eat', 'drink', 'buy', 'do', 'see', 'sleep', 'tollfree'
-    search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(fields))
-    template = ('<{type} name="{name}" address="{address}" phone="{phone}" email="{email}" '
-                'fax="{fax}" url="{url}" hours="{hours}" price="{price}" tollfree="{tollfree}" '
-                'lat="{lat}" long="{long}">{description}</{type}>')
+    types = 'eat', 'drink', 'buy', 'do', 'see', 'sleep'
+    search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(types))
+    fields = ('name', 'alt', 'address', 'directions', 'phone', 'tollfree', 'email', 
+              'fax', 'url', 'hours', 'checkin', 'checkout', 'price', 'lat', 'long')
+    template = '<{type} %s>{description}</{type}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields 
+                                                              if x not in ('checkin', 'checkout'))
+    template_sleep = '<{type} %s>{description}</{type}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields)
     xml_header = u'<?xml version="1.0" encoding="UTF-8" ?>\n'
     formatter = TolerantFormatter()
+    tagtype_translation = dict(restaurant='eat', bar='drink', shop='buy', activity='do', sight='see', hotel='sleep')
     
     @classmethod
     def read(cls, tag_str):
@@ -198,7 +201,8 @@ class Tag(Wikiparser):
     def tostring(cls, d):
         d = d.copy()
         type_lower = d['type'].lower()
-        if type_lower not in cls.fields:
+        type_lower = cls.tagtype_translation.get(type_lower, type_lower)
+        if type_lower not in cls.types:
             d['type'] = heuristics.determine_tagtype(type_lower)[0]
         phone_prefix = d.get('intl-area-code')
         if phone_prefix:
@@ -206,7 +210,7 @@ class Tag(Wikiparser):
             for item in Vcard.number_fields:
                 if item in d and d[item] and not d[item].startswith(('+', '00')):
                     d[item] = phone_prefix + d[item].lstrip('0')
-        return cls.formatter.format(cls.template, **d)
+        return cls.formatter.format(cls.template_sleep if d['type'] == 'sleep' else cls.template, **d)
 
     @classmethod
     def parse(cls, line):
