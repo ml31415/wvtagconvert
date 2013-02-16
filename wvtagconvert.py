@@ -250,7 +250,12 @@ def get_from_link(input_str):
             'action=edit' in input_str and 'wikivoyage' in input_str):
         input_str = fake_agent_readurl(input_str)
         t = ElementSoup.parse(StringIO(input_str))
-        input_str = t.find(".//textarea[@id='wpTextbox1']").text
+        if sys.version_info[:2] < (2, 7):
+            # Xpath too stupid for bracket syntax,
+            # fortunately there seems to be only one
+            input_str = t.find(".//textarea").text
+        else:
+            input_str = t.find(".//textarea[@id='wpTextbox1']").text
         return html_decode(input_str)
     return input_str
 
