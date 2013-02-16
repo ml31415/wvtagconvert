@@ -83,6 +83,7 @@ class TestParseUntaggedInput(unittest.TestCase):
         """Aninuan Beach Resort || http://www.aninuanbeach.com/ || Price: USD $50 || Phone : +63920 931 8946 or +63920 931 8924""",
         """deciBel Lounge || http://www.decibel.vn/ || 79/2/5 Phan Ke Binh - Quan 1 HCMC || ☎ +84 8 627 0115 || Close to the Jade Emperor Pagoda || The restaurant cafe deciBel Lounge is a place where you can find monthly art exhibition, a nice range of Mediterranean food and Vietnamese breakfast and lunch set menu || Open from 7am to 12am || Price range 20.000vnd (1$) to 200.000vnd (10$).""",
         """Barbecue Garden || http://www.barbecuegarden.com/ || 135A Nam Ky Khoi Nghia - Quan 1 HCMC || ☎ +84 8 823 3340 || Located 100 m from Ben Thanh Market, behind the General Sciences Library || US$5-7 range || The restaurant is a barbecue specialist with both Vietnamese and International recipes.""",
+        """Hoa Mai Coffee  || #43-45 Do Quang Dau Street || ☎+84 8 836 8310 || Located in a fun, up and coming area, just off Phan Ngu Lao ||  between Phan Ngu Lao Street and Bui Vien Street || Restaurant downstairs, on the second floor is a comfortable bar with pool table || International food and local dishes || Around US$2-5 || Fresh fruit shakes, spring rolls ||  Vietnamese noodles and pasta.""",
     ]
     
     test_classification = [
@@ -109,6 +110,7 @@ class TestParseUntaggedInput(unittest.TestCase):
         "name || url || price || phone",   
         "name || url || address || phone || description || description || hours || price",
         "name || url || address || phone || directions || price || description",
+        "name || address || phone || description || directions || description || description || price || description || description",
     ]
     
     def runTest(self):

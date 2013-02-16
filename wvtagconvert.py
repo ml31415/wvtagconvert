@@ -144,6 +144,8 @@ class Vcard(Wikiparser):
                "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
                "checkin checkout price credit-cards lat long description").split()
     number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
+    mandatory_fields = set(fields) - set(['fax-mobile', 'email2', 'email3', 'facebook', 'google', 'twitter',
+                            'skype', 'credit-cards', 'checkin', 'checkout'])
     tagtype_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 
     @classmethod
@@ -164,7 +166,14 @@ class Vcard(Wikiparser):
             d.pop('subtype', None)
         content = []
         for key in cls.fields:
-            content.append("%s=%s" % (key, d.get(key, '')))
+            val = d.get(key, '')
+            item_str = "%s=%s" % (key, val)
+            if val:
+                content.append(item_str)
+            elif key in cls.mandatory_fields:
+                content.append(item_str)
+            elif d['type'] == 'hotel' and key in ('checkin', 'checkout'):
+                content.append(item_str)
         return '{{vCard| %s}}' % '| '.join(content)
 
     @classmethod

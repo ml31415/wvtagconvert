@@ -297,7 +297,7 @@ chunk_type_categories = dict(
                    'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
                    'place', 'pl', 'road', 'rd', 'street', 'st',
                    'jalan', 'jl', 'soi', 'thanon', 'th', # Indonesia, Thailand
-                   'quan', 'q', 'd']), # Districts in Vietnam
+                   'quan', 'q', 'd', 'dist', 'district']), # Districts in Vietnam
     directions = set(['intersection', 'corner', 'opposite', 'nearby',
                   'near', 'inside', 'behind', 'left', 'right', 'bus',
                   'train', 'station', 'taxi', 'stop', 'next', 'at',
@@ -333,7 +333,7 @@ chunk_type_categories_partly = dict(
 chunk_combined_set = set.intersection(*chunk_type_categories.values())
 chunk_type_filter = set(string.ascii_letters + u""" +☎-@€¥£₹₱₪₩฿""")
 chunk_word_filter = set(string.digits + string.ascii_letters)
-chunk_description_fuzz = set(['location', 'prime', 'beach'])
+chunk_description_fuzz = set(['location', 'prime', 'beach', 'currently'])
 def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
     """ Name, address, directions, url, email, price, hours or description """
     scores = defaultdict(float)
@@ -431,7 +431,7 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
                 # string, the later, the less important
                 scores[chunk_type] += (wc - cnt) / wc
         if word not in chunk_combined_set:
-            scores['description'] += 0.07
+            scores['description'] += 0.06
         if word in chunk_description_fuzz:
             scores['description'] += 0.1
 
