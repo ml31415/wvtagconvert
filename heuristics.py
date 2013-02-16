@@ -301,7 +301,8 @@ chunk_type_categories = dict(
     directions = set(['intersection', 'corner', 'opposite', 'nearby',
                   'near', 'inside', 'behind', 'left', 'right', 'bus',
                   'train', 'station', 'taxi', 'stop', 'next', 'at',
-                  'between', 'tube', 'metro', 'subway', 'tram']),
+                  'between', 'tube', 'metro', 'subway', 'tram',
+                  'located', 'm', 'from']),
     alt = set(['aka', 'also', 'known', 'former']),
     phone = set(['tel', 'nr', 'phone', 'number', u'☎']),
     email = set(['email', 'e-mail', 'mail', 'mailto']),
@@ -397,7 +398,7 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
             scores['fax'] += 1.3
         elif continuous_len <= 4:
             if 1 <= position <= 2:
-                scores['address'] += 0.7
+                scores['address'] += 1.1
             else:
                 scores['address'] += 0.2
         continuous = [int(x) for x in continuous]
