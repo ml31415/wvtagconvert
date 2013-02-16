@@ -81,6 +81,7 @@ class TestParseUntaggedInput(unittest.TestCase):
         """White Beach Puerto Galera || http://www.puertogaleratour.com  || has a prime location at the center of White Beach || It offers modestly furnished but comfortable rooms || Each room is air-conditioned and comes with a private toilet and bath with shower and tub, cable TV ||  and room safe || The hotel also has an Internet cafe, bar and restaurant, Jacuzzi ||  and conference room || Water sports are available || that tourists can choose from.""",
         """Lagundian Hills Lodging House || http://www.puerto-galera.isgreat.com || at White Beach || Phone : +63(0)2 400-8547 or +63(0)916 644-4157 / || e-mail : mailto:lagundian@gmail.com || All rooms are well maintained and have views of the beach || Some rooms can accommodate up to eight guests, some have kitchen.""",
         """Aninuan Beach Resort || http://www.aninuanbeach.com/ || Price: USD $50 || Phone : +63920 931 8946 or +63920 931 8924""",
+        """deciBel Lounge || http://www.decibel.vn/ || 79/2/5 Phan Ke Binh - Quan 1 HCMC || ☎ +84 8 627 0115 || Close to the Jade Emperor Pagoda || The restaurant cafe deciBel Lounge is a place where you can find monthly art exhibition, a nice range of Mediterranean food and Vietnamese breakfast and lunch set menu || Open from 7am to 12am || Price range 20.000vnd (1$) to 200.000vnd (10$).""",
     ]
     
     test_classification = [
@@ -104,7 +105,8 @@ class TestParseUntaggedInput(unittest.TestCase):
         "name || description",
         "name || url || description || description || description || description || description || description || description || description",
         "name || url || directions || phone || email || description || description",
-        "name || url || price || phone",        
+        "name || url || price || phone",   
+        "name || url || address || phone || description || description || hours || price",
     ]
     
     def runTest(self):
@@ -116,7 +118,7 @@ class TestParseUntaggedInput(unittest.TestCase):
                 self.assertEqual(chunk_str, check, 
                         "Test %s\nItem: %s\nRslt: %s\nChck: %s" % (cnt, item, chunk_str, check))
             else:
-                print item, '\n', chunks, '\n'
+                print item, '\n', ' || '.join(chunks), '\n'
             chunk_types = map(classify_chunk, chunks, range(len(chunks)))
             chunk_type_str = ' || '.join(chunk_types)
             if check_classify:

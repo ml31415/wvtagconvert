@@ -297,7 +297,7 @@ chunk_type_categories = dict(
                    'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
                    'place', 'pl', 'road', 'rd', 'street', 'st',
                    'jalan', 'jl', 'soi', 'thanon', 'th', # Indonesia, Thailand
-                   ]),
+                   'quan', 'q', 'd']), # Districts in Vietnam
     directions = set(['intersection', 'corner', 'opposite', 'nearby',
                   'near', 'inside', 'behind', 'left', 'right', 'bus',
                   'train', 'station', 'taxi', 'stop', 'next', 'at',
@@ -314,6 +314,7 @@ chunk_type_categories = dict(
 
 chunk_type_categories_partly = dict(
     url = set(['http://', 'www.', '.com', '.org', '.net', '.htm', '.php']),
+    directions = set(['#']),
     alt = set(["'''"]),
     phone = set(['+']),
     fax = set(['+']),
@@ -349,6 +350,9 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
         scores['alt'] -= 0.6
     elif len(chunk) > 25:
         scores['address'] -= 0.5
+    else:
+        scores['address'] += 0.05
+        scores['directions'] -= 0.05
     
     if len(chunk) > 25:
         # Fresh, as for all options > 25
@@ -359,10 +363,15 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
     if position == 0:
         # No need for further heuristics
         return 'name'
-    elif 1 <= position <= 2:
-        scores['address'] += 0.5
+    elif position == 1:
+        scores['address'] += 0.4
         scores['directions'] += 0.15
-        scores['alt'] += 0.1
+        scores['alt'] += 0.3
+        scores['hours'] -= 0.2
+    elif position == 2:
+        scores['address'] += 0.4
+        scores['directions'] += 0.15
+        scores['alt'] += 0.05
         scores['hours'] -= 0.3
     elif position >= 3:
         scores['address'] -= 0.6
@@ -387,7 +396,10 @@ def classify_chunk(chunk, position=None, wc_offset=5, full_list=False):
             scores['phone'] += 1.4
             scores['fax'] += 1.3
         elif continuous_len <= 4:
-            scores['address'] += 0.5
+            if 1 <= position <= 2:
+                scores['address'] += 0.7
+            else:
+                scores['address'] += 0.2
         continuous = [int(x) for x in continuous]
         if any(1700 < x < 2050 for x in continuous):
             # Probably historical date, not price

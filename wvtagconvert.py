@@ -14,11 +14,14 @@ import json
 import os
 import operator
 from itertools import groupby
-from xml.etree import ElementTree
+from StringIO import StringIO
+
+import ElementSoup
 
 import heuristics
 from utils import TolerantFormatter, squeeze, fake_agent_readurl, html_encode, html_decode
 from page import create_page
+
 
 
 class Wikiparser(object):
@@ -185,11 +188,10 @@ class Tag(Wikiparser):
     @classmethod
     def read(cls, tag_str):
         tag_str = tag_str.lstrip('*: ')
-        if sys.version_info[:2] < (2, 7):
-            tag_str =  cls.xml_header + tag_str
-            t = ElementTree.fromstring(tag_str.encode('utf8'))
-        else:
-            t = ElementTree.fromstring(tag_str)
+        t = ElementSoup.parse(StringIO(tag_str), encoding='utf8')
+        if t.tag == 'html':
+            # Parsing inconsistency with included ampersands
+            t = t[0]
         d = dict(t.items())
         d['type'] = t.tag
         if t.text:
@@ -228,7 +230,7 @@ def parse_wikicode(input_str, outputformat='vcard'):
             try:
                 found += cls.parse(line)
             except ValueError:
-                pass
+                raise
     
     if outputformat == 'raw':
         return found
@@ -246,19 +248,9 @@ def get_from_link(input_str):
     input_str = input_str.strip()
     if (input_str.count('\n') <= 1 and input_str.startswith('http://') and 
             'action=edit' in input_str and 'wikivoyage' in input_str):
-        input_str = fake_agent_readurl(input_str).decode('utf8')
-        try:
-            t = ElementTree.fromstring(input_str)
-        except Exception:
-            try:
-                input_str = re.findall(r'<textarea [^>]*id="wpTextbox1".*?>(.*?)</textarea>', input_str, flags=re.DOTALL)[0]
-            except IndexError:
-                raise ValueError('No textarea found in the linked page')
-        else:
-            try:
-                input_str = t.xpath("//textarea[@id='wpTextbox1']").text
-            except Exception:
-                raise ValueError("No wiki edit field found in the linked page")
+        input_str = fake_agent_readurl(input_str)
+        t = ElementSoup.parse(StringIO(input_str))
+        input_str = t.find(".//textarea[@id='wpTextbox1']").text
         return html_decode(input_str)
     return input_str
 
