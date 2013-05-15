@@ -4,9 +4,7 @@ Created on 10.05.2013
 
 @author: nimrod
 '''
-from collections import OrderedDict
-
-from translation.common import vcard_fields, merge_buzzwords, categories_buzz, subcategories_buzz
+from translation.common import vcard_fields, merge_buzzwords, categories_buzz, subcategories_buzz, OrderedDict
 import translation.english as english
 
 mandatory_fields = english.mandatory_fields

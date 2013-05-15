@@ -3,6 +3,11 @@ Created on 15.05.2013
 
 @author: nimrod
 '''
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 vcard_fields = ("type subtype name alt comment address directions intl-area-code phone mobile "
                "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
                "checkin checkout price credit-cards lat long description").split()
