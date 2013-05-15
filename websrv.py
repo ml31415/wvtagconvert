@@ -13,8 +13,9 @@ icon = None
 @route('/', method=['GET', 'POST'])
 def serve_page():
     outputformat = request.forms.get('outputformat', 'vcard')
+    language_str = request.forms.get('language', 'english')
     input_str = request.forms.get('convertinput', '')
-    return create_html(input_str, outputformat)
+    return create_html(input_str, outputformat=outputformat, language=language_str)
 
 @route('/favicon.ico')
 def serve_icon():

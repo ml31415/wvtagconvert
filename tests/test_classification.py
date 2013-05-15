@@ -7,7 +7,8 @@ Created on 11.02.2013
 import unittest
 from itertools import izip_longest
 
-from heuristics import classify_chunk, determine_tagtype, chunkify, parse_phonefax
+import translation
+from heuristics import classify_chunk, determine_tagtype, chunkify, parse_phonefax, get_chunk_filter
 from wvtagconvert import Untagged
 from samples import untaggeds
 
@@ -36,10 +37,10 @@ class TestCategorizeItems(unittest.TestCase):
         ('sleep', 'guesthouse'),
         ('sleep', 'hotel'),
     ]
-    
+
     def runTest(self):
         for cnt, (item, comp) in enumerate(zip(untaggeds, self.test_arr)):
-            tagtype = determine_tagtype(item)
+            tagtype = determine_tagtype(item, translation.english)
             self.assertEqual(tagtype, comp, "Test %d: %s != %s: %s" % (
                             cnt, tagtype, comp, item))
 
@@ -51,7 +52,7 @@ class TestParsePhonefax(unittest.TestCase):
         ("""Phone Number: +63(0)2 400-8547 or +63(0)916 644-4157 / e-mail: mailto:lagundian@gmail.com.""",
             ['Phone : +63(0)2 400-8547 or +63(0)916 644-4157 /', 'e-mail : mailto:lagundian@gmail.com.']),
     ]
-    
+
     def runTest(self):
         for val, check in self.test_arr:
             res = parse_phonefax(val, verbose=True)
@@ -85,14 +86,14 @@ class TestParseUntaggedInput(unittest.TestCase):
         """Barbecue Garden || http://www.barbecuegarden.com/ || 135A Nam Ky Khoi Nghia - Quan 1 HCMC || ☎ +84 8 823 3340 || Located 100 m from Ben Thanh Market, behind the General Sciences Library || US$5-7 range || The restaurant is a barbecue specialist with both Vietnamese and International recipes.""",
         """Hoa Mai Coffee  || #43-45 Do Quang Dau Street || ☎+84 8 836 8310 || Located in a fun, up and coming area, just off Phan Ngu Lao ||  between Phan Ngu Lao Street and Bui Vien Street || Restaurant downstairs, on the second floor is a comfortable bar with pool table || International food and local dishes || Around US$2-5 || Fresh fruit shakes, spring rolls ||  Vietnamese noodles and pasta.""",
     ]
-    
+
     test_classification = [
         "name || address || description",
         "name || address || description",
         "name || address || directions || phone || email || url || description",
         "name || alt || address || phone || email || url || hours || hours || hours || description || description || description || description",
         "name || address || phone || url || description",
-        "name || address || phone",        
+        "name || address || phone",
         "name || address || phone || description || url || description || description || description || description || description",
         "name || address || phone || description || description || description || description || description || description || description || description || description",
         "name || description || hours || description || description || description",
@@ -107,36 +108,37 @@ class TestParseUntaggedInput(unittest.TestCase):
         "name || description",
         "name || url || description || description || description || description || description || description || description || description",
         "name || url || directions || phone || email || description || description",
-        "name || url || price || phone",   
+        "name || url || price || phone",
         "name || url || address || phone || description || description || hours || price",
         "name || url || address || phone || directions || price || description",
         "name || address || phone || description || directions || description || description || price || description || description",
     ]
-    
+
     def runTest(self):
-        for cnt, (item, check, check_classify) in enumerate(izip_longest(untaggeds, self.test_splits, 
+        for cnt, (item, check, check_classify) in enumerate(izip_longest(untaggeds, self.test_splits,
                                                         self.test_classification)):
-            chunks = chunkify(item, verbose=not check)
+            chunks = chunkify(item, translation.english, verbose=not check)
             chunk_str = ' || '.join(chunks)
             if check:
-                self.assertEqual(chunk_str, check, 
+                self.assertEqual(chunk_str, check,
                         "Test %s\nItem: %s\nRslt: %s\nChck: %s" % (cnt, item, chunk_str, check))
             else:
                 print item, '\n', ' || '.join(chunks), '\n'
-            chunk_types = map(classify_chunk, chunks, range(len(chunks)))
+            cf = get_chunk_filter(translation.english)
+            chunk_types = map(classify_chunk, chunks, [cf] * len(chunks), range(len(chunks)))
             chunk_type_str = ' || '.join(chunk_types)
             if check_classify:
-                self.assertEqual(chunk_type_str, check_classify, 
+                self.assertEqual(chunk_type_str, check_classify,
                         "Test %s\nRslt: %s\nClss: %s\nChck: %s\n%s" % (
-                            cnt, chunk_str, chunk_type_str, check_classify, 
-                            '\n'.join(str(classify_chunk(x, pos, full_list=True)) for pos, x in enumerate(chunks))))
+                            cnt, chunk_str, chunk_type_str, check_classify,
+                            '\n'.join(str(classify_chunk(x, cf, pos, full_list=True)) for pos, x in enumerate(chunks))))
             else:
                 print chunk_str
                 print chunk_type_str
 
             #print Untagged.read(item) 
-            
-            
+
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

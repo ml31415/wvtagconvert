@@ -30,6 +30,12 @@ html_template = u"""<!DOCTYPE html>
                     <option name="tag"{tag_selected}>Tag</option>
                     <option name="json"{json_selected}>json</option>
                 </select>
+                Language:
+                <select name="language">
+                    <option name="English"{english_selected}>English</option>
+                    <option name="German"{german_selected}>German</option>
+                    <option name="Portuguese"{portuguese_selected}>Portuguese</option>
+                </select>
                 <button type="button" onclick="area = document.getElementById('convertinput'); area.value = ''; area.focus()" title="Clear input area">Clear</button>
                 <button type="submit" name="parse" title="Parse input data">Parse</button>
                 {output_button}
@@ -68,10 +74,11 @@ div_output = u"""<div id="output">
 formatter = TolerantFormatter()
 defaultinput = u'Some samples:\n* ' + '\n* '.join((untaggeds[2], untaggeds[9], tags[0], vcards[0]))
 
-def create_page(input_str, output, outputformat='vcard', script_path='/'):
+def create_page(input_str, output, outputformat='vcard', language='english', script_path='/'):
     output = div_output.format(output=output) if output else ''
     params = dict(output_template=output, default_input=input_str or defaultinput,
                   script_path=script_path, jscript=jscript,
                   output_button=output_button if output else '')
     params[outputformat.lower() + '_selected'] = u'selected="selcted"'
+    params[language.lower() + '_selected'] = u'selected="selcted"'
     return formatter.format(html_template, **params)

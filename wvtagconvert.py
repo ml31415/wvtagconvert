@@ -13,22 +13,25 @@ import sys
 import json
 import os
 import operator
+import logging
 from itertools import groupby
 from StringIO import StringIO
 
 import ElementSoup
 
 import heuristics
+import translation
 from utils import TolerantFormatter, squeeze, fake_agent_readurl, html_encode, html_decode
 from page import create_page
 
 
+logging.basicConfig(level=logging.INFO)
 
 class Wikiparser(object):
     """ Fixes parsed information """
-    item_lookup = {'phone': 'numbers', 
-                   'mobile': 'numbers', 
-                   'fax': 'numbers', 
+    item_lookup = {'phone': 'numbers',
+                   'mobile': 'numbers',
+                   'fax': 'numbers',
                    'fax-mobile': 'numbers'}
 
     @classmethod
@@ -43,10 +46,10 @@ class Wikiparser(object):
                 description += '.'
         return description
 
-    @classmethod    
+    @classmethod
     def directions(cls, directions):
         return directions.replace("'", '').strip()
-    
+
     @classmethod
     def numbers(cls, number):
         number = number.lstrip(';., ')
@@ -65,7 +68,7 @@ class Wikiparser(object):
                 number = '0' + number[2:]
             number = number.replace("'", '')
         return number
-    
+
     @classmethod
     def url(cls, url):
         if url.startswith('['):
@@ -76,14 +79,14 @@ class Wikiparser(object):
         if not url.startswith('http://') and not '//' in url:
             url = 'http://' + url
         return url
-            
+
     @classmethod
     def email(cls, email):
         if ':' in email:
             # Remove mailto: and email: things
             email = email.split(':', 1)[1].strip()
         return email.split(' ')[0].replace("'", '')
-    
+
     @classmethod
     def price(cls, price):
         return price[0].upper() + price[1:].rstrip('., ')
@@ -112,90 +115,72 @@ class Untagged(Wikiparser):
     # Search criteria: Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
     search = r"""^(?:\*[:*]*\s{0,3})?'''.{3,40}'''[,. ].{20,2000}"""
     unique_items = set(['name', 'address', 'phone', 'fax', 'email', 'url'])
-    
+
     @classmethod
-    def read(cls, untagged_str):
+    def read(cls, untagged_str, language):
         """ Determine type of tag by counting buzz words. Separate string into chunks and analyze
             the chunks separately. Determine the type (name, address, direction, description)
             of the chunk by counting characteristics (http found, mailto found, type of 
             encapsulation, ...).
         """
-        tag_type = heuristics.determine_tagtype(untagged_str)
-        chunks = heuristics.chunkify(untagged_str)
-        chunk_types = map(heuristics.classify_chunk, chunks, range(len(chunks)))
+        tag_type = heuristics.determine_tagtype(untagged_str, language)
+        chunks = heuristics.chunkify(untagged_str, language)
+        cf = heuristics.get_chunk_filter(language)
+        chunk_types = [heuristics.classify_chunk(chunk, cf, pos) for pos, chunk in enumerate(chunks)]
         # Group all identified parts
-        d = dict((k, (g.next()[1] if k in cls.unique_items else 
-                      heuristics.merge_chunks(list(i[1] for i in g), untagged_str)))  
-                 for k, g in groupby(sorted(zip(chunk_types, chunks), 
+        d = dict((k, (g.next()[1] if k in cls.unique_items else
+                      heuristics.merge_chunks(list(i[1] for i in g), untagged_str)))
+                 for k, g in groupby(sorted(zip(chunk_types, chunks),
                                 key=operator.itemgetter(0)), key=operator.itemgetter(0)))
         d['type'] = tag_type[0]
         d['subtype'] = tag_type[1]
         return cls.sanitize(d)
-    
+
     @classmethod
-    def parse(cls, line):
+    def parse(cls, line, language):
         lst = re.findall(cls.search, line, flags=re.MULTILINE)
-        return [cls.read(l) for l in lst]
-    
+        return [cls.read(l, language) for l in lst]
+
 
 class Vcard(Wikiparser):
     search = r'{{vcard\s*\|.+}}.*$'
-    fields = ("type subtype name alt comment address directions intl-area-code phone mobile "
-               "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
-               "checkin checkout price credit-cards lat long description").split()
-    number_fields = 'phone', 'mobile', 'fax', 'fax-mobile'
-    mandatory_fields = set(fields) - set(['fax-mobile', 'email2', 'email3', 'facebook', 'google', 'twitter',
-                            'skype', 'credit-cards', 'checkin', 'checkout'])
-    tagtype_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 
     @classmethod
-    def read(cls, vcard_str):
+    def read(cls, vcard_str, language):
         vcard_str, description = vcard_str.split('}}', 1)
         pts = [pt.split('=') for pt in vcard_str.strip('{},. ').split('|')[1:]]
         d = dict((p[0].strip().lower(), p[1]) for p in pts)
         description = d.setdefault('description', description)
         if not d.get('subtype') and description:
-            d['subtype'] = heuristics.determine_tagtype(d.get('name', '') + ' ' + description)[1]
+            d['subtype'] = heuristics.determine_tagtype(d.get('name', '') + ' ' + description, language)[1]
         return cls.sanitize(d)
 
     @classmethod
-    def tostring(cls, d):
-        d = d.copy()
-        d['type'] = cls.tagtype_translation.get(d['type'].lower(), d['type'])
-        if d['type'] == d.get('subtype'):
-            d.pop('subtype', None)
-        content = []
-        for key in cls.fields:
-            val = d.get(key, '')
-            item_str = "%s=%s" % (key, val)
-            if val:
-                content.append(item_str)
-            elif key in cls.mandatory_fields:
-                content.append(item_str)
-            elif d['type'] == 'hotel' and key in ('checkin', 'checkout'):
-                content.append(item_str)
-        return '{{vCard| %s}}' % '| '.join(content)
+    def tostring(cls, d, language):
+        d = language.translate_vcard(d)
+        d.pop('tag', None)
+        return '{{vCard| %s}}' % '| '.join("%s=%s" % (key, val) for key, val in d.iteritems())
 
     @classmethod
-    def parse(cls, line):
-        lst = re.findall(Vcard.search, line, flags=re.MULTILINE|re.IGNORECASE)
-        return [cls.read(l) for l in lst]
+    def parse(cls, line, language):
+        lst = re.findall(Vcard.search, line, flags=re.MULTILINE | re.IGNORECASE)
+        return [cls.read(l, language) for l in lst]
 
 
 class Tag(Wikiparser):
     types = 'eat', 'drink', 'buy', 'do', 'see', 'sleep'
     search = r'(<(%s).+>.*?</\2>)' % '|'.join(sorted(types))
-    fields = ('name', 'alt', 'address', 'directions', 'phone', 'tollfree', 'email', 
+    fields = ('name', 'alt', 'address', 'directions', 'phone', 'tollfree', 'email',
               'fax', 'url', 'hours', 'checkin', 'checkout', 'price', 'lat', 'long')
-    template = '<{type} %s>{description}</{type}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields 
+    template = '<{tag} %s>{description}</{tag}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields
                                                               if x not in ('checkin', 'checkout'))
-    template_sleep = '<{type} %s>{description}</{type}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields)
+    template_sleep = '<{tag} %s>{description}</{tag}>' % ' '.join('%s="{%s}"' % (x, x) for x in fields)
     xml_header = u'<?xml version="1.0" encoding="UTF-8" ?>\n'
     formatter = TolerantFormatter()
     tagtype_translation = dict(restaurant='eat', bar='drink', shop='buy', activity='do', sight='see', hotel='sleep')
-    
+
     @classmethod
-    def read(cls, tag_str):
+    def read(cls, tag_str, language):
         tag_str = tag_str.lstrip('*: ')
         t = ElementSoup.parse(StringIO(tag_str), encoding='utf8')
         if t.tag == 'html':
@@ -205,57 +190,61 @@ class Tag(Wikiparser):
         d['type'] = t.tag
         if t.text:
             d['description'] = t.text
-            d['subtype'] = heuristics.determine_tagtype(d['name'] + ' ' + d['description'])[1]
+            d['subtype'] = heuristics.determine_tagtype(d['name'] + ' ' + d['description'], language)[1]
         return cls.sanitize(d)
-    
+
     @classmethod
-    def tostring(cls, d):
+    def tostring(cls, d, language):
         d = d.copy()
         type_lower = d['type'].lower()
-        type_lower = cls.tagtype_translation.get(type_lower, type_lower)
         if type_lower not in cls.types:
-            type_lower = heuristics.determine_tagtype(type_lower)[0]
-        d['type'] = type_lower
+            type_lower = heuristics.determine_tagtype(type_lower, language)[0]
+        d['tag'] = type_lower
+
         phone_prefix = d.get('intl-area-code')
         if phone_prefix:
             phone_prefix += ' '
             for item in Vcard.number_fields:
                 if item in d and d[item] and not d[item].startswith(('+', '00')):
                     d[item] = phone_prefix + d[item].lstrip('0')
-        return cls.formatter.format(cls.template_sleep if d['type'] == 'sleep' else cls.template, **d)
+        return cls.formatter.format(cls.template_sleep if d['tag'] == 'sleep' else cls.template, **d)
 
     @classmethod
-    def parse(cls, line):
-        lst = re.findall(cls.search, line, flags=re.DOTALL|re.IGNORECASE)
-        return [cls.read(l[0]) for l in lst]
-    
+    def parse(cls, line, language):
+        lst = re.findall(cls.search, line, flags=re.DOTALL | re.IGNORECASE)
+        return [cls.read(l[0], language) for l in lst]
 
-def parse_wikicode(input_str, outputformat='vcard'):
+
+def parse_wikicode(input_str, outputformat='vcard', language='english'):
+    try:
+        language = getattr(__import__('translation.' + language), language)
+    except ImportError:
+        language = translation.english
     input_str = html_decode(input_str)
     found = []
     for line in input_str.split('\n*'):
         line = '*' + line
         for cls in [Tag, Vcard, Untagged]:
             try:
-                found += cls.parse(line)
+                found += cls.parse(line, language)
             except ValueError:
                 raise
-    
+
     if outputformat == 'raw':
         return found
     elif outputformat == 'json':
         return [json.dumps(l) for l in found]
     elif outputformat == 'tag':
-        return [Tag.tostring(l) for l in found]
+        return [Tag.tostring(l, language) for l in found]
     elif outputformat == 'vcard':
-        return [Vcard.tostring(l) for l in found]
+        return [Vcard.tostring(l, language) for l in found]
     else:
         raise ValueError('Invalid output outputformat: %s' % outputformat)
-    
+
 
 def get_from_link(input_str):
     input_str = input_str.strip()
-    if (input_str.count('\n') <= 1 and input_str.startswith('http://') and 
+    if (input_str.count('\n') <= 1 and input_str.startswith('http://') and
             'action=edit' in input_str and 'wikivoyage' in input_str):
         input_str = fake_agent_readurl(input_str)
         t = ElementSoup.parse(StringIO(input_str))
@@ -269,15 +258,16 @@ def get_from_link(input_str):
     return input_str
 
 
-def create_html(input_str, outputformat='vcard', script_path='/'):
+def create_html(input_str, outputformat='vcard', language='english', script_path='/'):
     outputformat = outputformat.lower()
+    language = language.lower()
     input_str = input_str.decode('utf8')
     try:
         input_str = get_from_link(input_str)
     except ValueError as e:
         output = str(e)
     else:
-        output = parse_wikicode(input_str, outputformat)
+        output = parse_wikicode(input_str, outputformat=outputformat, language=language)
 
     if not input_str:
         output = None
@@ -287,7 +277,7 @@ def create_html(input_str, outputformat='vcard', script_path='/'):
         output = u'[%s]' % u',\n'.join(output)
     else:
         output = u'No entries found.'
-    return create_page(html_encode(input_str), output, outputformat, 
+    return create_page(html_encode(input_str), output, outputformat, language=language,
                        script_path=script_path).encode('utf8')
 
 
@@ -300,7 +290,7 @@ def cgi_serve_page():
     outputformat = form.getfirst('outputformat', 'vcard')
     input_str = form.getfirst('convertinput', '')
     page = create_html(input_str, outputformat, script_path=os.path.basename(__file__).rstrip('c'))
-    header =  "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
+    header = "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)
     sys.stdout.flush()
