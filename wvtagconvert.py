@@ -288,8 +288,10 @@ def cgi_serve_page():
     cgitb.enable()
     form = cgi.FieldStorage()
     outputformat = form.getfirst('outputformat', 'vcard')
+    language = form.getfirst('language', 'english')
     input_str = form.getfirst('convertinput', '')
-    page = create_html(input_str, outputformat, script_path=os.path.basename(__file__).rstrip('c'))
+    page = create_html(input_str, outputformat=outputformat, language=language,
+                       script_path=os.path.basename(__file__).rstrip('c'))
     header = "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)
