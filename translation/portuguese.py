@@ -21,7 +21,7 @@ vcard_items = dict(type='tipo', name='nome', alt='alt',
                    checkin='checkin', checkout='checkout', lat='lat', long='long',
                    description='sobre')
 
-abbreviations = 'av ed pred r rod est estr tr pç jd st pq jl th tel nr no'
+abbreviations = 'av ed pred r rod est estr tr pç jd st pq jl th tel nr no'.split()
 
 def translate_vcard(vcard):
     ret = OrderedDict((vcard_items.get(k, k), vcard.get(k, ''))
