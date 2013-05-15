@@ -37,16 +37,16 @@ def translate_vcard(vcard):
 
 buzzwords = dict(
     sleep=dict(
-               general={'quarto', 'pousada', 'ar condicionado',
+               general=set(['quarto', 'pousada', 'ar condicionado',
                          'banheira', 'café da manhã', 'limpo',
                          'lavanderia', 'veranda', 'janela', 'malas', 'cabo',
                          'cama', 'ventilador', 'geladeira', 'banheiro', 'sala',
                          'acomodar', 'tenente', 'preço', 'acomodação',
-                         'cheiro', 'faxineira', 'pessoal', 'serviço'},
-                hotel={ 'segura', 'frigobar', 'seguro', 'privado', 'estrela', 'sauna',
+                         'cheiro', 'faxineira', 'pessoal', 'serviço']),
+                hotel=set([ 'segura', 'frigobar', 'seguro', 'privado', 'estrela', 'sauna',
                         'residência', 'balneário', 'buffet', 'academia',
-                        'suite', 'reserva', 'exclusivo', 'elegante'},
-                hostel={'albergue'})
+                        'suite', 'reserva', 'exclusivo', 'elegante']),
+                hostel=set(['albergue']))
 )
 
 buzzwords = merge_buzzwords(buzzwords, english.buzzwords)
