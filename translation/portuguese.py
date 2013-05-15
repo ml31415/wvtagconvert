@@ -16,8 +16,8 @@ categories = dict(see='veja', do='faça', buy='compre', eat='coma', drink='beba'
                    sleep='durma', listing='item')
 
 vcard_items = dict(type='tipo', name='nome', alt='alt',
-                   address='endereço', directions='direções', phone='tel', email='email',
-                   fax='fax', url='site', hours='funcionamento', price='preço',
+                   address=u'endereço', directions=u'direções', phone='tel', email='email',
+                   fax='fax', url='site', hours='funcionamento', price=u'preço',
                    checkin='checkin', checkout='checkout', lat='lat', long='long',
                    description='sobre')
 
