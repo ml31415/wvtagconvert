@@ -12,8 +12,8 @@ mandatory_fields = set(vcard_fields) - set(['fax-mobile', 'email2', 'email3', 'f
                         'intl-area-code', 'mobile', 'comment'])
 
 
-categories = dict(see='veja', do='faça', buy='compre', eat='coma', drink='beba',
-                   sleep='durma', listing='item')
+categories = dict(see='veja', do='faça', buy='compre', eat='come', drink='beba',
+                   sleep='durma', listing='outro')
 
 vcard_items = dict(type='tipo', name='nome', alt='alt',
                    address=u'endereço', directions=u'direções', phone='tel', email='email',
@@ -33,6 +33,10 @@ def translate_vcard(vcard):
     ret['tipo'] = categories.get(ret.get('tipo'), ret.get('tipo'))
     ret['tag'] = vcard['type'].lower()
     return ret
+
+def format_vcard(vcard):
+    vcard_type = vcard.pop('tipo', 'outro')
+    return u'{{%s| %s}}' % (vcard_type, '| '.join(u"%s=%s" % (key, val) for key, val in vcard.iteritems()))
 
 buzzwords = dict(
     sleep=dict(

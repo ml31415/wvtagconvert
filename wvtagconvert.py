@@ -159,7 +159,8 @@ class Vcard(Wikiparser):
     def tostring(cls, d, language):
         d = language.translate_vcard(d)
         d.pop('tag', None)
-        return u'{{vCard| %s}}' % '| '.join(u"%s=%s" % (key, val) for key, val in d.iteritems())
+        formatter = getattr(language, 'format_vcard', translation.common.format_vcard)
+        return formatter(d)
 
     @classmethod
     def parse(cls, line, language):

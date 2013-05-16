@@ -6,7 +6,7 @@ Created on 15.05.2013
 try:
     from collections import OrderedDict
 except ImportError:
-    from ordereddict import OrderedDict
+    from ordereddict import OrderedDict #@UnusedImport
 
 vcard_fields = ("type subtype name alt comment address directions intl-area-code phone mobile "
                "fax fax-mobile email email2 email3 url facebook google twitter skype hours "
@@ -31,3 +31,6 @@ def subcategories_buzz(buzzwords):
     for subcat in ret.values():
         subcat.pop('general', None)
     return ret
+
+def format_vcard(vcard):
+    return u'{{vCard| %s}}' % '| '.join(u"%s=%s" % (key, val) for key, val in vcard.iteritems())
