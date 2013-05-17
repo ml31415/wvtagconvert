@@ -114,6 +114,7 @@ class Wikiparser(object):
 class Untagged(Wikiparser):
     # Search criteria: Max 3 spaces in beginning, bold written name, 3-40 chars, comma or dot delimited
     search = r"""^(?:\*[:*]*\s{0,3})?'''.{3,40}'''[,. ].{20,2000}"""
+    search_generous = r"""^(?:\*[:*]*\s{0,3})?.{3,40}[,. ].{20,2000}"""
     unique_items = set(['name', 'address', 'phone', 'fax', 'email', 'url'])
 
     @classmethod
@@ -137,8 +138,11 @@ class Untagged(Wikiparser):
         return cls.sanitize(d)
 
     @classmethod
-    def parse(cls, line, language):
-        lst = re.findall(cls.search, line, flags=re.MULTILINE)
+    def parse(cls, line, language, restrictive=True):
+        if restrictive:
+            lst = re.findall(cls.search, line, flags=re.MULTILINE)
+        else:
+            lst = re.findall(cls.search_generous, line, flags=re.MULTILINE)
         return [cls.read(l, language) for l in lst]
 
 
@@ -231,6 +235,10 @@ def parse_wikicode(input_str, outputformat='vcard', language='english'):
             except ValueError:
                 raise
 
+    if not found:
+        for line in input_str.split('\n*'):
+            found += Untagged.parse(line, language, restrictive=False)
+
     if outputformat == 'raw':
         return found
     elif outputformat == 'json':
@@ -259,7 +267,7 @@ def get_from_link(input_str):
     return input_str
 
 
-def create_html(input_str, outputformat='vcard', language='english', script_path='/'):
+def create_html(input_str, outputformat='vcard', language='english', script_path='/', plain=False):
     outputformat = outputformat.lower()
     language = language.lower()
     input_str = input_str.decode('utf8')
@@ -278,6 +286,8 @@ def create_html(input_str, outputformat='vcard', language='english', script_path
         output = u'[%s]' % u',\n'.join(output)
     else:
         output = u'No entries found.'
+    if plain:
+        return output.encode('utf8')
     return create_page(html_encode(input_str), output, outputformat, language=language,
                        script_path=script_path).encode('utf8')
 
@@ -291,8 +301,9 @@ def cgi_serve_page():
     outputformat = form.getfirst('outputformat', 'vcard')
     language = form.getfirst('language', 'english')
     input_str = form.getfirst('convertinput', '')
+    plain = form.getfirst('plain', False)
     page = create_html(input_str, outputformat=outputformat, language=language,
-                       script_path=os.path.basename(__file__).rstrip('c'))
+                       script_path=os.path.basename(__file__).rstrip('c'), plain=plain)
     header = "Content-Type: text/html; charset=utf-8\nContent-Length: %s\n\n" % len(page)
     sys.stdout.write(header)
     sys.stdout.write(page)

@@ -23,6 +23,10 @@ def merge_buzzwords(*buzzwordlist):
                         for subcat in subcategories)
     return ret
 
+def merge_chunk_buzzwords(*buzzwordlist):
+    categories = set.union(*[set(d) for d in buzzwordlist])
+    return dict((cat, set.union(*[d.get(cat, set()) for d in buzzwordlist])) for cat in categories)
+
 def categories_buzz(buzzwords):
     return dict((key, set.union(*buzzwords[key].values())) for key in buzzwords)
 
@@ -33,4 +37,4 @@ def subcategories_buzz(buzzwords):
     return ret
 
 def format_vcard(vcard):
-    return u'{{vCard| %s}}' % '| '.join(u"%s=%s" % (key, val) for key, val in vcard.iteritems())
+    return u'{{%s |%s}}' % (vcard.pop('type', 'listing'), ' |'.join(u"%s=%s" % (key, val) for key, val in vcard.iteritems()))

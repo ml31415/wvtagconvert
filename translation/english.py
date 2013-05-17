@@ -165,7 +165,7 @@ buzzwords = dict(
 categories_dict = categories_buzz(buzzwords)
 subcategories_dict = subcategories_buzz(buzzwords)
 
-chunk_type_categories = dict(
+chunk_buzzwords = dict(
     address=set(['avenue', 'ave', 'building', 'bldg', 'boulevard', 'blvd',
                    'drive', 'dr', 'expressway', 'expy', 'freeway', 'fwy',
                    'highway', 'hwy', 'lane', 'ln', 'parkway', 'pkwy',
@@ -187,8 +187,7 @@ chunk_type_categories = dict(
     price=set(['rates', 'start', 'only', 'cheap', 'from', 'to', 'euro'])
 )
 
-
-chunk_type_categories_partly = dict(
+chunk_buzzwords_partial = dict(
     url=set(['http://', 'www.', '.com', '.org', '.net', '.htm', '.php']),
     directions=set(['#']),
     alt=set(["'''"]),

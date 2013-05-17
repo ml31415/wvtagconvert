@@ -165,9 +165,8 @@ def chunkify(s, language, verbose=False):
 
 def get_chunk_filter(language):
     c = dict()
-    c['categories'] = getattr(language, 'chunk_type_categories', english.chunk_type_categories)
-    c['categories_partly'] = getattr(language, 'chunk_type_categories_partly', english.chunk_type_categories_partly)
-    assert isinstance(c['categories_partly'], dict)
+    c['categories'] = getattr(language, 'chunk_buzzwords', english.chunk_buzzwords)
+    c['categories_partly'] = getattr(language, 'chunk_buzzwords_partial', english.chunk_buzzwords_partial)
     c['combined_set'] = set.intersection(*c['categories'].values())
     c['type_filter'] = set(string.ascii_letters + u""" +☎-@€¥£₹₱₪₩฿""")
     c['word_filter'] = set(string.digits + string.ascii_letters)
