@@ -7,14 +7,14 @@ Created on 10.05.2013
 from translation.common import vcard_fields, categories_buzz, subcategories_buzz, OrderedDict
 
 mandatory_fields = set(vcard_fields) - set(['fax-mobile', 'email2', 'email3', 'facebook', 'google', 'twitter',
-                        'skype', 'credit-cards', 'checkin', 'checkout'])
+                        'skype', 'credit-cards', 'checkin', 'checkout', 'intl-area-code', 'subtype', 'mobile'])
 tagtype_translation = dict(eat='restaurant', drink='bar', buy='shop', do='activity', see='sight', sleep="hotel")
 
 def translate_vcard(vcard):
     default_tag = vcard['type'].lower()
-    vcard['type'] = tagtype_translation.get(default_tag, default_tag)
-    if vcard['type'] == vcard.get('subtype'):
-        vcard.pop('subtype', None)
+    # vcard['type'] = tagtype_translation.get(default_tag, default_tag)
+    # if vcard['type'] == vcard.get('subtype'):
+    vcard.pop('subtype', None)
 
     ret = OrderedDict()
     ret['tag'] = default_tag
