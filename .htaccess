@@ -1,10 +1,12 @@
-Options +ExecCGI
+Options +ExecCGI +Indexes
 AddHandler cgi-script .py
 
-Order Deny,Allow
-Deny from all
+DirectoryIndex wvtagconvert.py
 
-<Files wvtagconvert.py>
+#Order Deny,Allow
+#Deny from all
+
+<Files ~ "\.(htm|html|py)$">
     Order Allow,Deny
     Allow from all
 </Files>
