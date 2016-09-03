@@ -39,7 +39,7 @@ License
 -------
 [GPLv3][8]
 
- [1]: http://dev.mldesign.net/wvtagconvert/wvtagconvert.py "Sample installation"
+ [1]: https://loeffler.io/dev/wvtagconvert/ "Sample installation"
  [2]: https://github.com/ml31415/wvtagconvert/issues/1 "Parsing issue tracker"
  [3]: http://de.wikivoyage.org/wiki/Vorlage:VCard "VCard specification"
  [4]: https://en.wikivoyage.org/wiki/Wikivoyage:Listings "Listing tag specification"
